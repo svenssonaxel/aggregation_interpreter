@@ -53,7 +53,7 @@ class Record {
   void Print();
 
  private:
-  unsigned char buf_[encoded_length_];
+  alignas(8) unsigned char buf_[encoded_length_];
   Column* cols_[n_cols];
   ColumnType cols_type_[n_cols];
 };

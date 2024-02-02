@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 
 #include "interpreter.h"
 
@@ -35,11 +36,11 @@ int main() {
 
   program[2] = 0; // group by column 0
   program[3] = kTypeBigInt; // The 1st aggregation type BIGINT
-  program[4] = kTypeDouble; // The 3rd aggregation type DOUBLE
-  program[5] = kTypeDouble; // The 4th aggregation type BIGINT
-  program[6] = kTypeDouble; // The 5th aggregation type DOUBLE
-  program[7] = kTypeBigInt; // The 6th aggregation type DOUBLE
-  program[8] = kTypeBigInt; // The 2nd aggregation type BIGINT
+  program[4] = kTypeDouble; // The 2nd aggregation type DOUBLE
+  program[5] = kTypeDouble; // The 3rd aggregation type BIGINT
+  program[6] = kTypeDouble; // The 4th aggregation type DOUBLE
+  program[7] = kTypeBigInt; // The 5th aggregation type DOUBLE
+  program[8] = kTypeBigInt; // The 6th aggregation type BIGINT
 
   program[ins_pos] =
                ((uint8_t)kOpLoadCol) << 26 |                             // LOADCOL
@@ -130,7 +131,7 @@ int main() {
                 0 << 25 | (uint8_t)(kTypeDouble << 4) << 17 |                // kTypeDouble (Reg 1)
                 1 << 20 | (uint8_t)(kTypeBigInt << 4) << 12 |                // unsigned kTypeBigInt (Reg 2)
                 ((uint8_t)kReg1 & 0x0F) << 12 | ((uint8_t)kReg2 & 0xF) << 8; // Register 1, Register 2
-                                                                             
+
   program[ins_pos + 15] =
                ((uint8_t)kOpLoadCol) << 26 |                             // LOADCOL
                0 << 25 | (uint8_t)(kTypeDouble << 4) << 17 |             // kTypeDouble
@@ -147,7 +148,7 @@ int main() {
                 ((uint8_t)kOpMax) << 26 |                                // MAX
                 0 << 25 | (uint8_t)(kTypeDouble << 4) << 17 |            // kTypeDouble (Reg 1)
                 ((uint8_t)kReg1 & 0x0F) << 16 |                          // Register 1
-                (uint16_t)2;                                             // agg_result 10
+                (uint16_t)2;                                             // agg_result 2
 
   program[ins_pos + 18] =
                ((uint8_t)kOpLoadCol) << 26 |                             // LOADCOL
@@ -231,8 +232,9 @@ int main() {
                ((uint8_t)kOpCount) << 26 |                              // COUNT
                1 << 25 | (uint8_t)(kTypeBigInt << 4) << 17 |            // kTypeBigInt
                ((uint8_t)kReg1 & 0x0F) << 16 |                          // Register 1
-               (uint16_t)5;                                             // agg_result 0
+               (uint16_t)5;                                             // agg_result 5
 
+  assert(ins_pos + 31 == g_prog_len - 1);
 
   AggInterpreter agg(program, g_prog_len);
   agg.Init();
