@@ -1,0 +1,371 @@
+
+===== Illegal character at beginning =====
+Parsing query 1: select a from table;
+Syntax error in SQL statement at position 0: Illegal character 0x1B
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal character at end =====
+Parsing query 1: select a from table;
+Syntax error in SQL statement at position 20: Illegal character 0x7F
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal character in identifier =====
+Parsing query 1: select `a` from table;
+Syntax error in SQL statement at position 9: Illegal character 0x05
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal token =====
+Parsing query 1: select #a from table;
+Syntax error in SQL statement: Illegal token
+> select #a from table;
+!        ^
+Failed to parse.
+=> Exit code: 1
+
+===== EOI inside quoted identifier =====
+Parsing query 1: select `a
+Syntax error in SQL statement: Unexpected end of input inside quoted identifier
+> select `a
+!        ^^
+Failed to parse.
+=> Exit code: 1
+
+===== EOI inside escaped identifier =====
+Parsing query 1: select `bc``de
+Syntax error in SQL statement: Unexpected end of input inside quoted identifier
+> select `bc``de
+!        ^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Empty input =====
+Parsing query 1: 
+Syntax error in SQL statement: Empty input
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected end of input =====
+Parsing query 1: select a from table
+Syntax error in SQL statement: Unexpected end of input
+> select a from table
+!                    ^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected at this point =====
+Parsing query 1: select a `bcde` from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a `bcde` from table;
+!          ^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected before newline =====
+Parsing query 1: select a `bcde`
+ from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a `bcde`
+!          ^^^^^^
+>  from table;
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected after newline =====
+Parsing query 1: select a 
+`bcde` from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a 
+> `bcde` from table;
+! ^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected with ending newline =====
+Parsing query 1: select a `bcde` from table;
+
+Syntax error in SQL statement: Unexpected at this point
+> select a `bcde` from table;
+!          ^^^^^^
+> Failed to parse.
+=> Exit code: 1
+
+===== Unexpected with newline at start =====
+Parsing query 1: 
+select a `bcde` from table;
+Syntax error in SQL statement: Unexpected at this point
+> 
+> select a `bcde` from table;
+!          ^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected containing newline =====
+Parsing query 1: select a `bc
+de` from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a `bc
+!          ^^^
+> de` from table;
+! ^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected containing two newlines =====
+Parsing query 1: select a `b
+cd
+e` from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a `b
+!          ^^
+> cd
+! ^^
+> e` from table;
+! ^^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected escaped identifier =====
+Parsing query 1: select a `bc``de` from table;
+Syntax error in SQL statement: Unexpected at this point
+> select a `bc``de` from table;
+!          ^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Two escaped identifiers, 1st unexpected =====
+Parsing query 1: select a `bc``de` from `fg``h``i`;
+Syntax error in SQL statement: Unexpected at this point
+> select a `bc``de` from `fg``h``i`;
+!          ^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Two escaped identifiers, 2nd unexpected =====
+Parsing query 1: select a, `bc``de` from table `fg``h``i`;
+Syntax error in SQL statement: Unexpected at this point
+> select a, `bc``de` from table `fg``h``i`;
+!                               ^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== APICompileTest =====
+Compilation example 1:
+
+Aggregations:
+A0=Max(`apples`)
+A1=Sum((`apples` + (`oranges` * `kiwis`)))
+A2=Min((`apples` - (`oranges` * `kiwis`)))
+A3=Sum((`apples` + (`oranges` * `kiwis`)))
+A4=Min((`apples` - (`oranges` * `kiwis`)))
+A5=Count((`apples` + `apples`))
+A6=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))))
+A7=Min((`apples` + (`apples` + (`apples` + `apples`))))
+A8=Max((((`apples` + `apples`) + `apples`) + `apples`))
+A9=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
+A10=Count((`apples` + (`apples` + `apples`)))
+
+Aggregation program (53 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`apples`
+Max    A00  r00 A00:MAX <- r00:`apples`
+Load   r01  C01 r01 = C01:`oranges`
+Load   r02  C02 r02 = C02:`kiwis`
+Mul    r01  r02 r01:`oranges` *= r02:`kiwis`
+Mov    r02  r00 r02 = r00:`apples`
+Add    r00  r01 r00:`apples` += r01:(`oranges` * `kiwis`)
+Sum    A01  r00 A01:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
+Mov    r03  r02 r03 = r02:`apples`
+Minus  r02  r01 r02:`apples` -= r01:(`oranges` * `kiwis`)
+Min    A02  r02 A02:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
+Sum    A03  r00 A03:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
+Min    A04  r02 A04:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
+Mov    r00  r03 r00 = r03:`apples`
+Add    r03  r03 r03:`apples` += r03:`apples`
+Count  A05  r03 A05:COUNT <- r03:(`apples` + `apples`)
+Mov    r01  r00 r01 = r00:`apples`
+Add    r00  r03 r00:`apples` += r03:(`apples` + `apples`)
+Mov    r02  r01 r02 = r01:`apples`
+Add    r01  r00 r01:`apples` += r00:(`apples` + (`apples` + `apples`))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r01 r02:`apples` += r01:(`apples` + (`apples` + (`apples` + `apples`)))
+Mov    r05  r04 r05 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + `apples`))))
+Mov    r02  r05 r02 = r05:`apples`
+Add    r05  r04 r05:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r05 r02:`apples` += r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))
+Count  A06  r02 A06:COUNT <- r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))))
+Min    A07  r01 A07:MIN <- r01:(`apples` + (`apples` + (`apples` + `apples`)))
+Add    r03  r04 r03:(`apples` + `apples`) += r04:`apples`
+Add    r03  r04 r03:((`apples` + `apples`) + `apples`) += r04:`apples`
+Max    A08  r03 A08:MAX <- r03:(((`apples` + `apples`) + `apples`) + `apples`)
+Count  A09  r05 A09:COUNT <- r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
+Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
+
+
+Compilation example 2:
+
+Aggregations:
+A0=Max(`apples`)
+A1=Sum((`apples` + (`oranges` * `kiwis`)))
+A2=Min((`apples` - (`oranges` * `kiwis`)))
+A3=Sum((`apples` + (`oranges` * `kiwis`)))
+A4=Min((`apples` - (`oranges` * `kiwis`)))
+A5=Count((`apples` + `apples`))
+A6=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))))
+A7=Min((`apples` + (`apples` + (`apples` + `apples`))))
+A8=Max((((`apples` + `apples`) + `apples`) + `apples`))
+A9=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
+A10=Count((`apples` + (`apples` + `apples`)))
+
+Aggregation program (53 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`apples`
+Max    A00  r00 A00:MAX <- r00:`apples`
+Load   r01  C01 r01 = C01:`oranges`
+Load   r02  C02 r02 = C02:`kiwis`
+Mul    r01  r02 r01:`oranges` *= r02:`kiwis`
+Mov    r02  r00 r02 = r00:`apples`
+Add    r00  r01 r00:`apples` += r01:(`oranges` * `kiwis`)
+Sum    A01  r00 A01:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
+Mov    r03  r02 r03 = r02:`apples`
+Minus  r02  r01 r02:`apples` -= r01:(`oranges` * `kiwis`)
+Min    A02  r02 A02:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
+Sum    A03  r00 A03:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
+Min    A04  r02 A04:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
+Mov    r00  r03 r00 = r03:`apples`
+Add    r03  r03 r03:`apples` += r03:`apples`
+Count  A05  r03 A05:COUNT <- r03:(`apples` + `apples`)
+Mov    r01  r00 r01 = r00:`apples`
+Add    r00  r03 r00:`apples` += r03:(`apples` + `apples`)
+Mov    r02  r01 r02 = r01:`apples`
+Add    r01  r00 r01:`apples` += r00:(`apples` + (`apples` + `apples`))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r01 r02:`apples` += r01:(`apples` + (`apples` + (`apples` + `apples`)))
+Mov    r05  r04 r05 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + `apples`))))
+Mov    r02  r05 r02 = r05:`apples`
+Add    r05  r04 r05:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r05 r02:`apples` += r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))
+Mov    r06  r04 r06 = r04:`apples`
+Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))
+Mov    r02  r06 r02 = r06:`apples`
+Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))
+Mov    r04  r02 r04 = r02:`apples`
+Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))
+Count  A06  r02 A06:COUNT <- r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))))
+Min    A07  r01 A07:MIN <- r01:(`apples` + (`apples` + (`apples` + `apples`)))
+Add    r03  r04 r03:(`apples` + `apples`) += r04:`apples`
+Add    r03  r04 r03:((`apples` + `apples`) + `apples`) += r04:`apples`
+Max    A08  r03 A08:MAX <- r03:(((`apples` + `apples`) + `apples`) + `apples`)
+Count  A09  r05 A09:COUNT <- r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
+Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
+
+=> Exit code: 0
+
+===== Simple =====
+Parsing query 1: select a from table;
+SELECT
+  Out_0=C0:`a`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== Arithmetics =====
+Parsing query 1: select a, count(b), min((b+c)/(d-e)), max(d*e/f-b/c/f), count(b/c/f+d*e/f*(b+c)) from table;
+SELECT
+  Out_0=C5:`a`
+  Out_1=A0:Count(`b`)
+  Out_2=A1:Min(((`b` + `c`) / (`d` - `e`)))
+  Out_3=A2:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
+  Out_4=A3:Count((((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (`b` + `c`))))
+FROM table
+
+Aggregation program (23 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`b`
+Count  A00  r00 A00:COUNT <- r00:`b`
+Load   r01  C01 r01 = C01:`c`
+Mov    r02  r00 r02 = r00:`b`
+Add    r00  r01 r00:`b` += r01:`c`
+Load   r03  C02 r03 = C02:`d`
+Load   r04  C03 r04 = C03:`e`
+Mov    r05  r03 r05 = r03:`d`
+Minus  r03  r04 r03:`d` -= r04:`e`
+Mov    r06  r00 r06 = r00:(`b` + `c`)
+Div    r00  r03 r00:(`b` + `c`) /= r03:(`d` - `e`)
+Min    A01  r00 A01:MIN <- r00:((`b` + `c`) / (`d` - `e`))
+Mul    r05  r04 r05:`d` *= r04:`e`
+Load   r00  C04 r00 = C04:`f`
+Div    r05  r00 r05:(`d` * `e`) /= r00:`f`
+Div    r02  r01 r02:`b` /= r01:`c`
+Div    r02  r00 r02:(`b` / `c`) /= r00:`f`
+Mov    r00  r05 r00 = r05:((`d` * `e`) / `f`)
+Minus  r05  r02 r05:((`d` * `e`) / `f`) -= r02:((`b` / `c`) / `f`)
+Max    A02  r05 A02:MAX <- r05:(((`d` * `e`) / `f`) - ((`b` / `c`) / `f`))
+Mul    r00  r06 r00:((`d` * `e`) / `f`) *= r06:(`b` + `c`)
+Add    r02  r00 r02:((`b` / `c`) / `f`) += r00:(((`d` * `e`) / `f`) * (`b` + `c`))
+Count  A03  r02 A03:COUNT <- r02:(((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (`b` + `c`)))
+
+=> Exit code: 0
+
+===== Quoted ID =====
+Parsing query 1: select a, `b`, `c``c`, count(`d`), min((`e``e`+`f`)/(g-`h`)) from table;
+SELECT
+  Out_0=C5:`a`
+  Out_1=C6:`b`
+  Out_2=C7:`c``c`
+  Out_3=A0:Count(`d`)
+  Out_4=A1:Min(((`e``e` + `f`) / (`g` - `h`)))
+FROM table
+
+Aggregation program (10 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`d`
+Count  A00  r00 A00:COUNT <- r00:`d`
+Load   r00  C01 r00 = C01:`e``e`
+Load   r01  C02 r01 = C02:`f`
+Add    r00  r01 r00:`e``e` += r01:`f`
+Load   r01  C03 r01 = C03:`g`
+Load   r02  C04 r02 = C04:`h`
+Minus  r01  r02 r01:`g` -= r02:`h`
+Div    r00  r01 r00:(`e``e` + `f`) /= r01:(`g` - `h`)
+Min    A01  r00 A01:MIN <- r00:((`e``e` + `f`) / (`g` - `h`))
+
+=> Exit code: 0
