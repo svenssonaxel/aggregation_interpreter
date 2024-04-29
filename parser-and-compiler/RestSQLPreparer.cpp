@@ -72,20 +72,32 @@ RestSQLPreparer::parse()
   bool print_statement = true;
   switch(m_context.m_err_state)
   {
-  case ErrState::LEX_ILLEGAL_CHARACTER:
-    assert(m_context.m_err_len == 1);
-    fprintf(stderr,
-            "Syntax error in SQL statement at position %d: "
-            "Illegal character 0x%02X\n",
-            err_pos,
-            static_cast<unsigned char>(m_sql.str[err_pos]));
-    print_statement = false;
+  case ErrState::LEX_NUL:
+    msg = "Unexpected null byte.";
+    break;
+  case ErrState::LEX_U_ILLEGAL_BYTE:
+    msg = "Bytes 0xf8-0xff are illegal in UTF-8.";
+    break;
+  case ErrState::LEX_U_OVERLONG:
+    msg = "Overlong UTF-8 encoding.";
+    break;
+  case ErrState::LEX_U_TOOHIGH:
+    msg = "Unicode code points above U+10FFFF are invalid.";
+    break;
+  case ErrState::LEX_U_SURROGATE:
+    msg = "Unicode code points U+D800 -- U+DFFF are invalid, as they correspond to UTF-16 surrogate pairs.";
+    break;
+  case ErrState::LEX_NONBMP_IDENTIFIER:
+    msg = "Unicode code points above U+FFFF are not allowed in MySQL identifiers.";
     break;
   case ErrState::LEX_ILLEGAL_TOKEN:
     msg = "Illegal token";
     break;
   case ErrState::LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER:
     msg = "Unexpected end of input inside quoted identifier";
+    break;
+  case ErrState::LEX_U_ENC_ERR:
+    msg = "Invalid UTF-8 encoding.";
     break;
   case ErrState::PARSER_ERROR:
     if(m_sql.len == 0)
@@ -142,7 +154,10 @@ RestSQLPreparer::parse()
         uint err_marker_pos = line_started_at;
         while(err_marker_pos < err_pos)
         {
-          cerr << " ";
+          if(has_width(err_marker_pos))
+          {
+            cerr << " ";
+          }
           err_marker_pos++;
         }
         while(err_marker_pos < err_stop &&
@@ -150,7 +165,10 @@ RestSQLPreparer::parse()
                ? err_marker_pos <= pos
                : err_marker_pos < pos))
         {
-          cerr << "^";
+          if(has_width(err_marker_pos))
+          {
+            cerr << "^";
+          }
           err_marker_pos++;
         }
         cerr << endl;
@@ -162,6 +180,31 @@ RestSQLPreparer::parse()
     }
   }
   return false;
+}
+
+bool
+RestSQLPreparer::has_width(uint pos)
+{
+  // Return false if the position is a UTF-8 continuation byte and part of a
+  // prefix of a correct UTF-8 multi-byte sequence, otherwise true.
+  char* s = m_sql.str;
+  char c = s[pos];
+  if((c & 0xc0) != 0x80) return true;
+  if(pos < 1) return true;
+  c = s[pos - 1];
+  if((c & 0xe0) == 0xc0) return false;
+  if((c & 0xf0) == 0xe0) return false;
+  if((c & 0xf8) == 0xf0) return false;
+  if((c & 0xc0) != 0x80) return true;
+  if(pos < 2) return true;
+  c = s[pos - 2];
+  if((c & 0xf0) == 0xe0) return false;
+  if((c & 0xf8) == 0xf0) return false;
+  if((c & 0xc0) != 0x80) return true;
+  if(pos < 3) return true;
+  c = s[pos - 3];
+  if((c & 0xf8) == 0xf0) return false;
+  return true;
 }
 
 bool

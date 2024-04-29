@@ -48,7 +48,13 @@ public:
   enum class ErrState
   {
     NONE,
-    LEX_ILLEGAL_CHARACTER,
+    LEX_NUL,
+    LEX_U_ILLEGAL_BYTE,
+    LEX_U_ENC_ERR,
+    LEX_U_OVERLONG,
+    LEX_U_TOOHIGH,
+    LEX_U_SURROGATE,
+    LEX_NONBMP_IDENTIFIER,
     LEX_ILLEGAL_TOKEN,
     LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER,
     PARSER_ERROR,
@@ -108,6 +114,7 @@ private:
   int column_name_to_idx(LexString);
   LexString column_idx_to_name(int);
   void restoreOriginalBuffer();
+  bool has_width(uint pos);
 
 public:
   RestSQLPreparer(LexString modifiable_SQL, ArenaAllocator* aalloc);

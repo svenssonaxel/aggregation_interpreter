@@ -1,24 +1,82 @@
 
-===== Illegal character at beginning =====
-Parsing query 1: select a from table;
-Syntax error in SQL statement at position 0: Illegal character 0x1B
+===== Null byte at beginning =====
+Syntax error in SQL statement: Unexpected null byte.
+> Nelect a from table;
+! ^
 Failed to parse.
 => Exit code: 1
 
-===== Illegal character at end =====
-Parsing query 1: select a from table;
-Syntax error in SQL statement at position 20: Illegal character 0x7F
+===== Null byte in identifier =====
+Syntax error in SQL statement: Unexpected null byte.
+> select aN from table;
+!         ^
 Failed to parse.
 => Exit code: 1
 
-===== Illegal character in identifier =====
-Parsing query 1: select `a` from table;
-Syntax error in SQL statement at position 9: Illegal character 0x05
+===== Null byte at end =====
+Syntax error in SQL statement: Unexpected null byte.
+> select a from tableN
+!                    ^
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal UTF-8 byte =====
+Syntax error in SQL statement: Bytes 0xf8-0xff are illegal in UTF-8.
+> select aú from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal 0xc0 UTF-8 byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select aÀ from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== Illegal 0xc1 UTF-8 byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select aÁ from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 overlong 2-byte sequence =====
+Syntax error in SQL statement: Overlong UTF-8 encoding.
+> select aÁ¡ from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 overlong 3-byte sequence =====
+Syntax error in SQL statement: Overlong UTF-8 encoding.
+> select aàƒ¶ from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== Too high code point (U+123456) =====
+Syntax error in SQL statement: Unicode code points above U+10FFFF are invalid.
+> select `aô£‘–` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== Surrogate (U+dead) =====
+Syntax error in SQL statement: Unicode code points U+D800 -- U+DFFF are invalid, as they correspond to UTF-16 surrogate pairs.
+> select `aíº­` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== Non-BMP UTF-8 in identifier =====
+Syntax error in SQL statement: Unicode code points above U+FFFF are not allowed in MySQL identifiers.
+> select `að “—` from table;
+!          ^
 Failed to parse.
 => Exit code: 1
 
 ===== Illegal token =====
-Parsing query 1: select #a from table;
 Syntax error in SQL statement: Illegal token
 > select #a from table;
 !        ^
@@ -26,7 +84,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== EOI inside quoted identifier =====
-Parsing query 1: select `a
 Syntax error in SQL statement: Unexpected end of input inside quoted identifier
 > select `a
 !        ^^
@@ -34,21 +91,130 @@ Failed to parse.
 => Exit code: 1
 
 ===== EOI inside escaped identifier =====
-Parsing query 1: select `bc``de
 Syntax error in SQL statement: Unexpected end of input inside quoted identifier
 > select `bc``de
 !        ^^^^^^^
 Failed to parse.
 => Exit code: 1
 
+===== UTF-8 2-byte sequence with illegal 2nd byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `aÃ` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 2-byte sequence at EOI with 2nd byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableÃ
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 3-byte sequence with illegal 2nd byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `aá` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 3-byte sequence with illegal 3rd byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `aáš` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 3-byte sequence at EOI with 2nd byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableá
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 3-byte sequence at EOI with 3rd byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableáš
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence with illegal 2nd byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `að` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence with illegal 3rd byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `að ` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence with illegal 4th byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `að “` from table;
+!          ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence at EOI with 2nd byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableð
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence at EOI with 3rd byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableð 
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== UTF-8 4-byte sequence at EOI with 4th byte missing =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select `a` from `tableð “
+!                       ^
+Failed to parse.
+=> Exit code: 1
+
+===== Rogue UTF-8 continuation byte =====
+Syntax error in SQL statement: Invalid UTF-8 encoding.
+> select a‰ from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
 ===== Empty input =====
-Parsing query 1: 
 Syntax error in SQL statement: Empty input
 Failed to parse.
 => Exit code: 1
 
+===== Invalid token at beginning =====
+Syntax error in SQL statement: Illegal token
+> select a from table;
+! ^
+Failed to parse.
+=> Exit code: 1
+
+===== Control character in unquoted identifier =====
+Syntax error in SQL statement: Illegal token
+> select a from table;
+!         ^
+Failed to parse.
+=> Exit code: 1
+
+===== Invalid token at end =====
+Syntax error in SQL statement: Illegal token
+> select a from table;
+!                     ^
+Failed to parse.
+=> Exit code: 1
+
 ===== Unexpected end of input =====
-Parsing query 1: select a from table
 Syntax error in SQL statement: Unexpected end of input
 > select a from table
 !                    ^
@@ -56,7 +222,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected at this point =====
-Parsing query 1: select a `bcde` from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a `bcde` from table;
 !          ^^^^^^
@@ -64,8 +229,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected before newline =====
-Parsing query 1: select a `bcde`
- from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a `bcde`
 !          ^^^^^^
@@ -74,8 +237,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected after newline =====
-Parsing query 1: select a 
-`bcde` from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a 
 > `bcde` from table;
@@ -84,8 +245,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected with ending newline =====
-Parsing query 1: select a `bcde` from table;
-
 Syntax error in SQL statement: Unexpected at this point
 > select a `bcde` from table;
 !          ^^^^^^
@@ -93,8 +252,6 @@ Syntax error in SQL statement: Unexpected at this point
 => Exit code: 1
 
 ===== Unexpected with newline at start =====
-Parsing query 1: 
-select a `bcde` from table;
 Syntax error in SQL statement: Unexpected at this point
 > 
 > select a `bcde` from table;
@@ -103,8 +260,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected containing newline =====
-Parsing query 1: select a `bc
-de` from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a `bc
 !          ^^^
@@ -114,9 +269,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected containing two newlines =====
-Parsing query 1: select a `b
-cd
-e` from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a `b
 !          ^^
@@ -128,7 +280,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Unexpected escaped identifier =====
-Parsing query 1: select a `bc``de` from table;
 Syntax error in SQL statement: Unexpected at this point
 > select a `bc``de` from table;
 !          ^^^^^^^^
@@ -136,7 +287,6 @@ Failed to parse.
 => Exit code: 1
 
 ===== Two escaped identifiers, 1st unexpected =====
-Parsing query 1: select a `bc``de` from `fg``h``i`;
 Syntax error in SQL statement: Unexpected at this point
 > select a `bc``de` from `fg``h``i`;
 !          ^^^^^^^^
@@ -144,10 +294,27 @@ Failed to parse.
 => Exit code: 1
 
 ===== Two escaped identifiers, 2nd unexpected =====
-Parsing query 1: select a, `bc``de` from table `fg``h``i`;
 Syntax error in SQL statement: Unexpected at this point
 > select a, `bc``de` from table `fg``h``i`;
 !                               ^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Error marker alignment after 2-byte UTF-8 characters =====
+Syntax error in SQL statement: Unexpected at this point
+> select a
+>       ,rÃ¤ksmÃ¶rgÃ¥s rÃ¤ksmÃ¶rgÃ¥s
+!                   ^^^^^^^^^^
+> from table;
+Failed to parse.
+=> Exit code: 1
+
+===== Error marker alignment after 3-byte UTF-8 character =====
+Syntax error in SQL statement: Unexpected at this point
+> select a
+>       ,áš±ab áš±ab
+!            ^^^
+> from table;
 Failed to parse.
 => Exit code: 1
 
@@ -298,7 +465,6 @@ Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
 => Exit code: 0
 
 ===== Simple =====
-Parsing query 1: select a from table;
 SELECT
   Out_0=C0:`a`
 FROM table
@@ -308,7 +474,6 @@ No aggregation program.
 => Exit code: 0
 
 ===== Arithmetics =====
-Parsing query 1: select a, count(b), min((b+c)/(d-e)), max(d*e/f-b/c/f), count(b/c/f+d*e/f*(b+c)) from table;
 SELECT
   Out_0=C5:`a`
   Out_1=A0:Count(`b`)
@@ -346,7 +511,6 @@ Count  A03  r02 A03:COUNT <- r02:(((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (
 => Exit code: 0
 
 ===== Quoted ID =====
-Parsing query 1: select a, `b`, `c``c`, count(`d`), min((`e``e`+`f`)/(g-`h`)) from table;
 SELECT
   Out_0=C5:`a`
   Out_1=C6:`b`
@@ -370,12 +534,52 @@ Min    A01  r00 A01:MIN <- r00:((`e``e` + `f`) / (`g` - `h`))
 
 => Exit code: 0
 
+===== UTF-8 2-byte character in unquoted identifier =====
+SELECT
+  Out_0=C0:`aÃ¥`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== UTF-8 2-byte character in quoted identifier =====
+SELECT
+  Out_0=C0:`aÃ¥`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== UTF-8 3-byte character in unquoted identifier =====
+SELECT
+  Out_0=C0:`aáš±`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== UTF-8 3-byte character in quoted identifier =====
+SELECT
+  Out_0=C0:`aáš±`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== Control character in quoted identifier =====
+SELECT
+  Out_0=C0:`a`
+FROM table
+
+No aggregation program.
+
+=> Exit code: 0
+
 ===== has_item regression =====
-Parsing query 1: 
-select count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)
-      ,max(d*e/f-b/c/f)
-      ,min((ee+f)/(g-h))
-from table;
 SELECT
   Out_0=A0:Count(((((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`))
   Out_1=A1:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))

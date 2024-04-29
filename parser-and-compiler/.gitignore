@@ -4,6 +4,7 @@ ArenaAllocator.o
 LexString.o
 ParseCompileTest
 RestSQLLexer.l.cpp
+RestSQLLexer.l.err
 RestSQLLexer.l.hpp
 RestSQLLexer.l.o
 RestSQLLexer.l.with-yy_hold_char.cpp

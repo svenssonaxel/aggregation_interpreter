@@ -18,7 +18,23 @@ RestSQLLexer.l.with-yy_hold_char.cpp RestSQLLexer.l.hpp: \
  RestSQLParser.y.hpp \
  RestSQLPreparer.hpp \
 
-	flex RestSQLLexer.l
+# flex has no option to treat warnings as errors, so we use a temporary file for
+# that.
+	if flex RestSQLLexer.l 2> RestSQLLexer.l.err; then \
+	  true; \
+	else \
+	  echo "flex exit code=$$?" >> RestSQLLexer.l.err; \
+	fi
+	if grep -F '' RestSQLLexer.l.err; then \
+	  rm -f RestSQLLexer.l.err \
+	        RestSQLLexer.l.with-yy_hold_char.cpp \
+	        RestSQLLexer.l.hpp; \
+	  exit 1; \
+	else \
+	  rm -f RestSQLLexer.l.err; \
+	fi
+
+RestSQLLexer.l.cpp: RestSQLLexer.l.with-yy_hold_char.cpp
 
 # flex temporarily inserts a null byte after each token it scans so that the
 # user can comfortably use the token as a null-terminated C string. We don't
@@ -30,7 +46,6 @@ RestSQLLexer.l.with-yy_hold_char.cpp RestSQLLexer.l.hpp: \
 # Unfortunately, flex does not provide an option to turn off this feature.
 # Fortunately, removing this unwanted feature from the flex output in an
 # incredibly hacky way is both possible and easy, so that's what we'll do.
-RestSQLLexer.l.cpp: RestSQLLexer.l.with-yy_hold_char.cpp
 	sed -r "/yy_hold_char/d; / = '.0';/d;" $< > $@
 
 RestSQLParser.y.o: RestSQLParser.y.cpp \
@@ -113,4 +128,4 @@ APICompileTest: APICompileTest.cpp \
 	g++ -o $@ $< AggregationAPICompiler.o LexString.o ArenaAllocator.o
 
 clean:
-	rm -f ParseCompileTest APICompileTest *.o *.y.* *.l.*
+	rm -f ParseCompileTest APICompileTest *.o *.y.* *.l.* RestSQLLexer.l.err
