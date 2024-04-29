@@ -369,3 +369,57 @@ Div    r00  r01 r00:(`e``e` + `f`) /= r01:(`g` - `h`)
 Min    A01  r00 A01:MIN <- r00:((`e``e` + `f`) / (`g` - `h`))
 
 => Exit code: 0
+
+===== has_item regression =====
+Parsing query 1: 
+select count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)
+      ,max(d*e/f-b/c/f)
+      ,min((ee+f)/(g-h))
+from table;
+SELECT
+  Out_0=A0:Count(((((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`))
+  Out_1=A1:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
+  Out_2=A2:Min(((`ee` + `f`) / (`g` - `h`)))
+FROM table
+
+Aggregation program (37 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`a`
+Mov    r01  r00 r01 = r00:`a`
+Add    r00  r00 r00:`a` += r00:`a`
+Add    r00  r01 r00:(`a` + `a`) += r01:`a`
+Add    r00  r01 r00:((`a` + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((`a` + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((`a` + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Add    r00  r01 r00:(((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) += r01:`a`
+Count  A00  r00 A00:COUNT <- r00:((((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`)
+Load   r00  C01 r00 = C01:`d`
+Load   r01  C02 r01 = C02:`e`
+Mul    r00  r01 r00:`d` *= r01:`e`
+Load   r01  C03 r01 = C03:`f`
+Div    r00  r01 r00:(`d` * `e`) /= r01:`f`
+Load   r02  C04 r02 = C04:`b`
+Load   r03  C05 r03 = C05:`c`
+Div    r02  r03 r02:`b` /= r03:`c`
+Div    r02  r01 r02:(`b` / `c`) /= r01:`f`
+Minus  r00  r02 r00:((`d` * `e`) / `f`) -= r02:((`b` / `c`) / `f`)
+Max    A01  r00 A01:MAX <- r00:(((`d` * `e`) / `f`) - ((`b` / `c`) / `f`))
+Load   r00  C06 r00 = C06:`ee`
+Add    r00  r01 r00:`ee` += r01:`f`
+Load   r01  C07 r01 = C07:`g`
+Load   r02  C08 r02 = C08:`h`
+Minus  r01  r02 r01:`g` -= r02:`h`
+Div    r00  r01 r00:(`ee` + `f`) /= r01:(`g` - `h`)
+Min    A02  r00 A02:MIN <- r00:((`ee` + `f`) / (`g` - `h`))
+
+=> Exit code: 0

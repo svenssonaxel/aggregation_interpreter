@@ -109,11 +109,7 @@ public:
       {
         uint idx = item - pages[page];
         T* wouldBe = &pages[page][idx];
-        return ((page >> BITS) | idx) < item_count && wouldBe == item;
-      }
-      else
-      {
-        return false;
+        return ((page << BITS) | idx) < item_count && wouldBe == item;
       }
     }
     return false;

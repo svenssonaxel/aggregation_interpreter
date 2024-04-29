@@ -47,3 +47,10 @@ runtest "Simple" ./ParseCompileTest 'select a from table;'
 runtest "Arithmetics" ./ParseCompileTest 'select a, count(b), min((b+c)/(d-e)), max(d*e/f-b/c/f), count(b/c/f+d*e/f*(b+c)) from table;'
 runtest "Quoted ID" ./ParseCompileTest $'select a, `b`, `c``c`, count(`d`), min((`e``e`+`f`)/(g-`h`)) from table;'
 
+# Regression tests
+
+runtest "has_item regression" ./ParseCompileTest '
+select count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)
+      ,max(d*e/f-b/c/f)
+      ,min((ee+f)/(g-h))
+from table;'
