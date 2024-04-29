@@ -22,6 +22,11 @@
  */
 %option perf-report
 
+/* Suppress built-in allocator */
+%option noyyalloc
+%option noyyfree
+%option noyyrealloc
+
 /* Suppress functions we don't use */
 %option noinput
 %option nounput
@@ -232,3 +237,20 @@ sum     keyword(SUM);
   return T_ERR;
 }
 %%
+
+void*
+rsqlp_alloc(size_t bytes, void * scanner)
+{
+  return rsqlp_get_extra(scanner)->alloc(bytes);
+}
+
+void*
+rsqlp_realloc(void * ptr, size_t bytes, void * scanner)
+{
+  // If realloc is needed, we need to keep track of allocation size.
+  abort();
+}
+
+void
+rsqlp_free(void * ptr, void * scanner)
+{}

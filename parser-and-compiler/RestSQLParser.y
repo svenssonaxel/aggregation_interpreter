@@ -18,6 +18,11 @@ typedef void * yyscan_t;
 #include "LexString.hpp"
 #include "RestSQLPreparer.hpp"
 #include "AggregationAPICompiler.hpp"
+
+// Let bison use RestSQLPreparer's arena allocator
+#define YYMALLOC(SIZE) context->alloc(SIZE)
+#define YYFREE(PTR) void()
+
 #define yycheck rsqlp_check
 #define yydefact rsqlp_defact
 #define yydefgoto rsqlp_defgoto
