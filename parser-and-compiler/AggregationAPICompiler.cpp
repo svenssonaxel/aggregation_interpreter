@@ -28,6 +28,7 @@
 #include "AggregationAPICompiler.hpp"
 #define UINT_MAX ((uint)0xffffffff)
 using std::cout;
+using std::max;
 
 AggregationAPICompiler::AggregationAPICompiler
     (std::function<int(LexString)> column_name_to_idx,
@@ -62,7 +63,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
                                  Expr* right,
                                  uint colidx)
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return NULL;
   }
@@ -76,7 +77,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
   e.left = left;
   e.right = right;
   e.colidx = colidx;
-  if(op == ExprOp::Load)
+  if (op == ExprOp::Load)
   {
     assert(left == NULL);
     assert(right == NULL);
@@ -91,8 +92,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
     // expression, and use that to determine the order of evaluation.
     // We cannot afford to calculate the exact number of registers needed
     // since that is context-dependent and takes exponential time.
-    #define max(a,b) ((a) > (b) ? (a) : (b))
-    if(left == right)
+    if (left == right)
     {
       e.est_regs = left->est_regs;
       e.eval_left_first = true;
@@ -109,10 +109,10 @@ AggregationAPICompiler::new_expr(ExprOp op,
     }
   }
   // Deduplication
-  for(uint i=0; i<m_exprs.size(); i++)
+  for (uint i=0; i<m_exprs.size(); i++)
   {
     Expr* other = &m_exprs[i];
-    if(e.op == other->op &&
+    if (e.op == other->op &&
        e.left == other->left &&
        e.right == other->right &&
        e.colidx == other->colidx)
@@ -123,11 +123,11 @@ AggregationAPICompiler::new_expr(ExprOp op,
   // Since new expressions are only to be created during programming, the
   // above deduplication should always succeed during compilation.
   assert_status(PROGRAMMING);
-  if(left)
+  if (left)
   {
     left->usage++;
   }
-  if(right)
+  if (right)
   {
     right->usage++;
   }
@@ -139,7 +139,7 @@ void
 AggregationAPICompiler::new_agg(AggregationAPICompiler::AggType agg_type,
                                 AggregationAPICompiler::Expr* expr)
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return;
   }
@@ -155,13 +155,13 @@ AggregationAPICompiler::new_agg(AggregationAPICompiler::AggType agg_type,
 AggregationAPICompiler::Expr*
 AggregationAPICompiler::Load(LexString col_name)
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return NULL;
   }
   assert_status(PROGRAMMING);
   int col_idx = m_column_name_to_idx(col_name);
-  if(col_idx == -1)
+  if (col_idx == -1)
   {
     m_status = Status::FAILED;
     return NULL;
@@ -183,7 +183,7 @@ AggregationAPICompiler::public_arithmetic_expression_helper(ExprOp op,
                                                             Expr* x,
                                                             Expr* y)
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return NULL;
   }
@@ -195,7 +195,7 @@ void
 AggregationAPICompiler::public_aggregate_function_helper(AggType agg_type,
                                                          Expr* x)
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return;
   }
@@ -222,12 +222,26 @@ AggregationAPICompiler::public_aggregate_function_helper(AggType agg_type,
 void
 AggregationAPICompiler::svm_init()
 {
-  for(uint i=0; i<REGS; i++)
+  for (uint i=0; i<REGS; i++)
   {
     r[i] = NULL;
   }
 }
 
+#define OPERATOR_CASE(Name) \
+  case SVMInstrType::Name: \
+    assert_reg(dest); assert_reg(src); \
+    svm_use(dest, is_first_compilation); \
+    svm_use(src, is_first_compilation); \
+    r[dest]=new_expr(ExprOp::Name, r[dest], r[src], 0); \
+    break;
+#define AGG_CASE(Name) \
+  case SVMInstrType::Name: \
+    assert(dest < m_aggs.size()); \
+    assert_reg(src); \
+    svm_use(src, is_first_compilation); \
+    assert(m_aggs[dest].expr == r[src]); \
+    break;
 void
 AggregationAPICompiler::svm_execute(AggregationAPICompiler::Instr* instr,
                                     bool is_first_compilation)
@@ -235,7 +249,7 @@ AggregationAPICompiler::svm_execute(AggregationAPICompiler::Instr* instr,
   SVMInstrType type = instr->type;
   uint dest = instr->dest;
   uint src = instr->src;
-  switch(type)
+  switch (type)
   {
   case SVMInstrType::Load:
     assert_reg(dest);
@@ -245,29 +259,15 @@ AggregationAPICompiler::svm_execute(AggregationAPICompiler::Instr* instr,
     assert_reg(dest); assert_reg(src);
     r[dest]=r[src];
     break;
-  #define OPERATOR_CASE(Name) \
-  case SVMInstrType::Name: \
-    assert_reg(dest); assert_reg(src); \
-    svm_use(dest, is_first_compilation); \
-    svm_use(src, is_first_compilation); \
-    r[dest]=new_expr(ExprOp::Name, r[dest], r[src], 0); \
-    break;
   FORALL_ARITHMETIC_OPS(OPERATOR_CASE)
-  #undef OPERATOR_CASE
-  #define AGG_CASE(Name) \
-  case SVMInstrType::Name: \
-    assert(dest < m_aggs.size()); \
-    assert_reg(src); \
-    svm_use(src, is_first_compilation); \
-    assert(m_aggs[dest].expr == r[src]); \
-    break;
   FORALL_AGGS(AGG_CASE)
-  #undef AGG_CASE
   default:
     // Unknown instruction
     abort();
   }
 }
+# undef OPERATOR_CASE
+# undef AGG_CASE
 
 // svm_use communicates to the compiler when a value is used in a calculation
 void
@@ -275,7 +275,7 @@ AggregationAPICompiler::svm_use(uint reg, bool is_first_compilation)
 {
   Expr* value = r[reg];
   assert(value != NULL);
-  if(is_first_compilation)
+  if (is_first_compilation)
   {
     assert(value->usage - value->program_usage > 0);
     value->program_usage++;
@@ -294,38 +294,43 @@ AggregationAPICompiler::svm_use(uint reg, bool is_first_compilation)
  * VM on data nodes.
  */
 
+#define AGG_CASE(Name) \
+    case SVMInstrType::Name: \
+      assert(m_program[i].dest == next_aggregate); \
+      next_aggregate++; \
+      break;
 bool
 AggregationAPICompiler::compile()
 {
-  if(m_status == Status::FAILED)
+  if (m_status == Status::FAILED)
   {
     return false;
   }
   assert_status(PROGRAMMING);
   m_status = Status::COMPILING;
   svm_init();
-  for(uint i=0; i<REGS; i++)
+  for (uint i=0; i<REGS; i++)
   {
     m_locked[i] = 0;
   }
-  for(uint i=0; i<m_exprs.size(); i++)
+  for (uint i=0; i<m_exprs.size(); i++)
   {
     Expr* e = &m_exprs[i];
     assert(0 < e->usage);
     assert(e->program_usage == 0);
     assert(e->has_been_compiled == false);
   }
-  for(uint i=0; i<m_aggs.size(); i++)
+  for (uint i=0; i<m_aggs.size(); i++)
   {
     bool res = compile(&m_aggs[i], i);
-    if(!res)
+    if (!res)
     {
       printf("Failed to compile aggregation %i.\n", i);
       m_status = Status::FAILED;
       return false;
     }
   }
-  for(uint i=0; i<m_exprs.size(); i++)
+  for (uint i=0; i<m_exprs.size(); i++)
   {
     assert(m_exprs[i].usage == m_exprs[i].program_usage);
   }
@@ -334,18 +339,12 @@ AggregationAPICompiler::compile()
   // Assert correctness
   svm_init();
   uint next_aggregate = 0;
-  for(uint i=0; i<m_program.size(); i++)
+  for (uint i=0; i<m_program.size(); i++)
   {
     svm_execute(&m_program[i], false);
-    switch(m_program[i].type)
+    switch (m_program[i].type)
     {
-    #define AGG_CASE(Name) \
-    case SVMInstrType::Name: \
-      assert(m_program[i].dest == next_aggregate); \
-      next_aggregate++; \
-      break;
     FORALL_AGGS(AGG_CASE)
-    #undef AGG_CASE
     default:
       void(); // Do nothing
     }
@@ -353,13 +352,14 @@ AggregationAPICompiler::compile()
   assert(next_aggregate == m_aggs.size());
   return true;
 }
+#undef AGG_CASE
 
 bool
 AggregationAPICompiler::compile(AggExpr* agg, int idx)
 {
   assert_status(COMPILING);
   uint reg;
-  if(!compile(agg->expr, &reg))
+  if (!compile(agg->expr, &reg))
   {
     return false;
   }
@@ -374,9 +374,9 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
 {
   assert_status(COMPILING);
   // If the value already exists in a register then use that.
-  for(int i=0; i<REGS; i++)
+  for (int i=0; i<REGS; i++)
   {
-    if(r[i] == expr)
+    if (r[i] == expr)
     {
       *reg = i;
       return true;
@@ -386,9 +386,9 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
   expr->has_been_compiled = true;
   // Load operation is straight-forward since it only has one register
   // argument.
-  if(expr->op == ExprOp::Load)
+  if (expr->op == ExprOp::Load)
   {
-    if(!seize_register(reg, UINT_MAX))
+    if (!seize_register(reg, UINT_MAX))
     {
       return false;
     }
@@ -398,9 +398,9 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
   }
   // The rest of the logic is about arithmetic operations and optimization.
   uint dest=0, src=0;
-  if(expr->left == expr->right)
+  if (expr->left == expr->right)
   {
-    if(!compile(expr->left, &dest))
+    if (!compile(expr->left, &dest))
     {
       return false;
     }
@@ -409,15 +409,15 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
     m_locked[dest]++;
     m_locked[src]++; // Yes, this will lock the same register twice.
   }
-  else if(expr->eval_left_first)
+  else if (expr->eval_left_first)
   {
-    if(!compile(expr->left, &dest))
+    if (!compile(expr->left, &dest))
     {
       return false;
     }
     assert_reg(dest);
     m_locked[dest]++;
-    if(!compile(expr->right, &src))
+    if (!compile(expr->right, &src))
     {
       return false;
     }
@@ -426,13 +426,13 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
   }
   else
   {
-    if(!compile(expr->right, &src))
+    if (!compile(expr->right, &src))
     {
       return false;
     }
     assert_reg(src);
     m_locked[src]++;
-    if(!compile(expr->left, &dest))
+    if (!compile(expr->left, &dest))
     {
       return false;
     }
@@ -444,27 +444,27 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
   // twice.
   assert(r[dest] == expr->left); assert(r[src] == expr->right);
   assert(m_locked[dest]); assert(m_locked[src]);
-  if(dest == src)
+  if (dest == src)
   {
     assert(m_locked[dest] >= 2);
   }
-  if(expr->left->usage - expr->left->program_usage > (dest == src ? 2 : 1))
+  if (expr->left->usage - expr->left->program_usage > (dest == src ? 2 : 1))
   {
     // Destination holds a value that we'll need later.
     // Before writing to destination, try to save a copy.
     bool copy_already_exists = false;
-    for(uint i=0; i<REGS; i++)
+    for (uint i=0; i<REGS; i++)
     {
-      if(i != dest && r[i] == expr->left)
+      if (i != dest && r[i] == expr->left)
       {
         copy_already_exists = true;
         break;
       }
     }
-    if(!copy_already_exists)
+    if (!copy_already_exists)
     {
       uint new_reg;
-      if(seize_register(&new_reg,
+      if (seize_register(&new_reg,
                         estimated_cost_of_recalculating(expr->left, dest)))
       {
         assert_reg(new_reg);
@@ -475,31 +475,31 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
       }
     }
   }
-  if(m_locked[dest] > (dest == src ? 2 : 1))
+  if (m_locked[dest] > (dest == src ? 2 : 1))
   {
     // Destination register is not writable after removing our locks, so we
     // need to select another destination register.
     uint new_dest;
     bool copy_already_exists = false;
-    for(uint i=0; i<REGS; i++)
+    for (uint i=0; i<REGS; i++)
     {
-      if(r[i] == expr->left && m_locked[i] == 0)
+      if (r[i] == expr->left && m_locked[i] == 0)
       {
         new_dest = i;
         copy_already_exists = true;
         break;
       }
     }
-    if(!copy_already_exists)
+    if (!copy_already_exists)
     {
-      if(!seize_register(&new_dest, UINT_MAX))
+      if (!seize_register(&new_dest, UINT_MAX))
       {
         return false;
       }
     }
     assert_reg(new_dest);
     assert(m_locked[new_dest] == 0);
-    if(r[new_dest] != expr->left)
+    if (r[new_dest] != expr->left)
     {
       pushInstr(SVMInstrType::Mov, new_dest, dest, is_first_compilation);
     }
@@ -532,17 +532,17 @@ AggregationAPICompiler::seize_register(uint* reg, uint max_cost)
   uint cost[REGS];
   uint min_cost = UINT_MAX;
   uint ret = 0;
-  for(uint i=0; i<REGS; i++)
+  for (uint i=0; i<REGS; i++)
   {
-    if(m_locked[i])
+    if (m_locked[i])
     {
       cost[i] = UINT_MAX;
     }
-    else if(r[i] == NULL)
+    else if (r[i] == NULL)
     {
       cost[i] = 0;
     }
-    else if(r[i]->usage == r[i]->program_usage)
+    else if (r[i]->usage == r[i]->program_usage)
     {
       cost[i] = 0;
     }
@@ -550,13 +550,13 @@ AggregationAPICompiler::seize_register(uint* reg, uint max_cost)
     {
       cost[i] = estimated_cost_of_recalculating(r[i], i);
     }
-    if(cost[i] < min_cost)
+    if (cost[i] < min_cost)
     {
       min_cost = cost[i];
       ret = i;
     }
   }
-  if(!m_locked[ret] && cost[ret] <= max_cost)
+  if (!m_locked[ret] && cost[ret] <= max_cost)
   {
     assert_reg(ret);
     *reg = ret;
@@ -575,22 +575,22 @@ uint
 AggregationAPICompiler::estimated_cost_of_recalculating(Expr* expr,
                                                         uint without_using_reg)
 {
-  if(expr == NULL)
+  if (expr == NULL)
   {
     return 0;
   }
-  for(uint i=0; i<REGS; i++)
+  for (uint i=0; i<REGS; i++)
   {
-    if(i == without_using_reg)
+    if (i == without_using_reg)
     {
       continue;
     }
-    if(r[i] == expr)
+    if (r[i] == expr)
     {
       return 0;
     }
   }
-  if(expr->op == ExprOp::Load)
+  if (expr->op == ExprOp::Load)
   {
     return 1;
   }
@@ -614,6 +614,8 @@ AggregationAPICompiler::pushInstr(SVMInstrType type,
   svm_execute(&m_program.last_item(), is_first_compilation);
 }
 
+#define AGG_CASE(Name) \
+      case AggType::Name: instr = SVMInstrType::Name; break;
 void
 AggregationAPICompiler::pushInstr(AggType type,
                                   uint dest,
@@ -622,19 +624,18 @@ AggregationAPICompiler::pushInstr(AggType type,
 {
   assert_status(COMPILING);
   SVMInstrType instr;
-  switch(type)
+  switch (type)
   {
-    #define AGG_CASE(Name) \
-      case AggType::Name: instr = SVMInstrType::Name; break;
     FORALL_AGGS(AGG_CASE)
-    #undef AGG_CASE
     default:
       // Unknown aggregation type
       abort();
   }
   pushInstr(instr, dest, src, is_first_compilation);
 }
+#undef AGG_CASE
 
+#define OP_CASE(Name) case ExprOp::Name: instr = SVMInstrType::Name; break;
 void
 AggregationAPICompiler::pushInstr(ExprOp op,
                                   uint dest,
@@ -643,37 +644,53 @@ AggregationAPICompiler::pushInstr(ExprOp op,
 {
   assert_status(COMPILING);
   SVMInstrType instr;
-  switch(op)
+  switch (op)
   {
-    #define OP_CASE(Name) case ExprOp::Name: instr = SVMInstrType::Name; break;
     FORALL_ARITHMETIC_OPS(OP_CASE)
-    #undef OP_CASE
     default:
       // Unknown operation
       abort();
   }
   pushInstr(instr, dest, src, is_first_compilation);
 }
+#undef OP_CASE
 
+#define OPERATOR_CASE(Name) \
+    case SVMInstrType::Name: \
+      assert_reg(dest); assert_reg(src); \
+      this_instr_is_useful = reg_needed[dest]; \
+      if (this_instr_is_useful) \
+      { \
+        reg_needed[dest] = true; \
+        reg_needed[src] = true; \
+      } \
+      break;
+#define AGG_CASE(Name) \
+    case SVMInstrType::Name: \
+      assert(dest < m_aggs.size()); \
+      assert_reg(src); \
+      this_instr_is_useful = true; \
+      reg_needed[src] = true; \
+      break;
 void
 AggregationAPICompiler::dead_code_elimination()
 {
-  if(m_program.size() == 0) return;
+  if (m_program.size() == 0) return;
   // We identify dead code by traversing the program in reverse while keeping
   // track of what registers will be used later. At end of program, where we
   // begin traversing, no registers will be used later.
   bool reg_needed[REGS];
-  for(uint i=0; i<REGS; i++)
+  for (uint i=0; i<REGS; i++)
   {
     reg_needed[i] = false;
   }
   bool instr_useful[m_program.size()];
-  for(uint i=0; i<m_program.size(); i++)
+  for (uint i=0; i<m_program.size(); i++)
   {
     instr_useful[i] = false;
   }
   bool dead_code_found = false;
-  for(uint mark = m_program.size(); mark > 0; mark--)
+  for (uint mark = m_program.size(); mark > 0; mark--)
   {
     uint idx = mark - 1;
     Instr* instr = &m_program[idx];
@@ -685,12 +702,12 @@ AggregationAPICompiler::dead_code_elimination()
     // instruction. For this instruction type, use reg_needed to determine
     // whether the instructon does useful work, then adjust reg_needed to
     // specify what registers are needed *before* this instruction.
-    switch(type)
+    switch (type)
     {
     case SVMInstrType::Load:
       assert_reg(dest);
       this_instr_is_useful = reg_needed[dest];
-      if(this_instr_is_useful)
+      if (this_instr_is_useful)
       {
         reg_needed[dest] = false;
       }
@@ -698,38 +715,19 @@ AggregationAPICompiler::dead_code_elimination()
     case SVMInstrType::Mov:
       assert_reg(dest); assert_reg(src);
       this_instr_is_useful = reg_needed[dest];
-      if(this_instr_is_useful)
+      if (this_instr_is_useful)
       {
         reg_needed[dest] = false;
         reg_needed[src] = true;
       }
       break;
-    #define OPERATOR_CASE(Name) \
-    case SVMInstrType::Name: \
-      assert_reg(dest); assert_reg(src); \
-      this_instr_is_useful = reg_needed[dest]; \
-      if(this_instr_is_useful) \
-      { \
-        reg_needed[dest] = true; \
-        reg_needed[src] = true; \
-      } \
-      break;
     FORALL_ARITHMETIC_OPS(OPERATOR_CASE)
-    #undef OPERATOR_CASE
-    #define AGG_CASE(Name) \
-    case SVMInstrType::Name: \
-      assert(dest < m_aggs.size()); \
-      assert_reg(src); \
-      this_instr_is_useful = true; \
-      reg_needed[src] = true; \
-      break;
     FORALL_AGGS(AGG_CASE)
-    #undef AGG_CASE
     default:
       // Unknown instruction
       abort();
     }
-    if(this_instr_is_useful)
+    if (this_instr_is_useful)
     {
       instr_useful[idx] = true;
     }
@@ -741,14 +739,14 @@ AggregationAPICompiler::dead_code_elimination()
       dead_code_found = true;
     }
   }
-  if(dead_code_found)
+  if (dead_code_found)
   {
     DynamicArray<Instr> old_program = m_program;
     m_program.truncate();
     svm_init();
-    for(uint i=0; i<old_program.size(); i++)
+    for (uint i=0; i<old_program.size(); i++)
     {
-      if(instr_useful[i])
+      if (instr_useful[i])
       {
         Instr instr = old_program[i];
         pushInstr(instr.type, instr.dest, instr.src, false);
@@ -756,6 +754,8 @@ AggregationAPICompiler::dead_code_elimination()
     }
   }
 }
+#undef OPERATOR_CASE
+#undef AGG_CASE
 
 /*
  * End of Aggregation Compiler
@@ -773,7 +773,7 @@ AggregationAPICompiler::print_aggregates()
 {
   assert_status(COMPILED);
   printf("Aggregations:\n");
-  for(uint i=0; i<m_aggs.size(); i++)
+  for (uint i=0; i<m_aggs.size(); i++)
   {
     printf("A%i=", i);
     print_aggregate(i);
@@ -781,29 +781,29 @@ AggregationAPICompiler::print_aggregates()
   }
 }
 
-void
-AggregationAPICompiler::print_aggregate(int idx)
-{
-  switch(m_aggs[idx].agg_type)
-  {
-    #define AGG_CASE(Name) \
+#define AGG_CASE(Name) \
       case AggType::Name: \
         printf(#Name "("); \
         print(m_aggs[idx].expr); \
         printf(")"); \
         break;
+void
+AggregationAPICompiler::print_aggregate(int idx)
+{
+  switch (m_aggs[idx].agg_type)
+  {
     FORALL_AGGS(AGG_CASE)
-    #undef AGG_CASE
   default:
     // Unknown aggregation
     abort();
   }
 }
+#undef AGG_CASE
 
 void
 AggregationAPICompiler::print_program()
 {
-  if(m_program.size() == 0)
+  if (m_program.size() == 0)
   {
     printf("No aggregation program.\n\n");
     return;
@@ -812,7 +812,7 @@ AggregationAPICompiler::print_program()
   printf(
     "Aggregation program (%i instructions):\nInstr. DEST SRC DESCRIPTION\n",
     m_program.size());
-  for(uint i=0; i<m_program.size(); i++)
+  for (uint i=0; i<m_program.size(); i++)
   {
     print(&m_program[i]);
     svm_execute(&m_program[i], false);
@@ -823,19 +823,19 @@ AggregationAPICompiler::print_program()
 void
 AggregationAPICompiler::print(Expr* expr)
 {
-  if(expr == NULL)
+  if (expr == NULL)
   {
     printf("<EMPTY>");
     return;
   }
-  if(expr->op == AggregationAPICompiler::ExprOp::Load)
+  if (expr->op == AggregationAPICompiler::ExprOp::Load)
   {
     print_quoted_identifier(m_column_idx_to_name(expr->colidx));
     return;
   }
   printf("(");
   print(expr->left);
-  switch(expr->op)
+  switch (expr->op)
   {
   case ExprOp::Add: printf(" + "); break;
   case ExprOp::Minus: printf(" - "); break;
@@ -850,6 +850,23 @@ AggregationAPICompiler::print(Expr* expr)
   printf(")");
 }
 
+#define OPERATOR_CASE(Name) \
+  case SVMInstrType::Name: \
+    assert_reg(dest); assert_reg(src); \
+    printf("%-5s  r%02d  r%02d r%02d:", \
+           #Name, dest, src, dest); \
+    print(r[dest]); \
+    printf(" %s= r%02d:", relstr_##Name, src); \
+    print(r[src]); \
+    break;
+#define AGG_CASE(Name) \
+  case SVMInstrType::Name: \
+    assert(dest < m_aggs.size()); \
+    assert_reg(src); \
+    printf("%-5s  A%02d  r%02d A%02d:%s <- r%02d:", \
+           #Name, dest, src, dest, ucasestr_##Name, src);        \
+    print(r[src]); \
+    break;
 void
 AggregationAPICompiler::print(Instr* instr)
 {
@@ -865,7 +882,7 @@ AggregationAPICompiler::print(Instr* instr)
   static const char* ucasestr_Min = "MIN";
   static const char* ucasestr_Max = "MAX";
   static const char* ucasestr_Count = "COUNT";
-  switch(instr->type)
+  switch (instr->type)
   {
   case SVMInstrType::Load:
     assert_reg(dest);
@@ -879,41 +896,24 @@ AggregationAPICompiler::print(Instr* instr)
            dest, src, dest, src);
     print(r[src]);
     break;
-  #define OPERATOR_CASE(Name) \
-  case SVMInstrType::Name: \
-    assert_reg(dest); assert_reg(src); \
-    printf("%-5s  r%02d  r%02d r%02d:", \
-           #Name, dest, src, dest); \
-    print(r[dest]); \
-    printf(" %s= r%02d:", relstr_##Name, src); \
-    print(r[src]); \
-    break;
   FORALL_ARITHMETIC_OPS(OPERATOR_CASE)
-  #undef OPERATOR_CASE
-  #define AGG_CASE(Name) \
-  case SVMInstrType::Name: \
-    assert(dest < m_aggs.size()); \
-    assert_reg(src); \
-    printf("%-5s  A%02d  r%02d A%02d:%s <- r%02d:", \
-           #Name, dest, src, dest, ucasestr_##Name, src);        \
-    print(r[src]); \
-    break;
   FORALL_AGGS(AGG_CASE)
-  #undef AGG_CASE
   default:
     // Unknown instruction
     abort();
   }
   printf("\n");
 }
+#undef OPERATOR_CASE
+#undef AGG_CASE
 
 void
 AggregationAPICompiler::print_quoted_identifier(LexString id)
 {
   printf("`");
-  for(uint i=0; i < id.len; i++)
+  for (uint i=0; i < id.len; i++)
   {
-    if(id.str[i] == '`')
+    if (id.str[i] == '`')
     {
       printf("``");
     }

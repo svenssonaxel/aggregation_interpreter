@@ -49,9 +49,9 @@ main(int argc, char** argv)
   AggregationAPICompiler a(
     [col_names_a](LexString ls) -> int
     {
-      for(int i=0; i<3; i++)
+      for (int i=0; i<3; i++)
       {
-        if(ls == col_names_a[i])
+        if (ls == col_names_a[i])
         {
           return i;
         }
@@ -76,7 +76,7 @@ main(int argc, char** argv)
   a.Max(a.Add(a.Add(a.Add(apples,apples),apples),apples));
   a.Count(a.Add(apples,a.Add(apples,a.Add(apples,a.Add(apples,a.Add(apples,a.Add(apples,apples)))))));
   a.Count(a.Add(apples,a.Add(apples,apples)));
-  if(!a.compile())
+  if (!a.compile())
   {
     printf("Failed to compile.\n");
     return 1;
@@ -91,7 +91,7 @@ main(int argc, char** argv)
   AggregationAPICompiler b(
     [c](LexString ls) -> int
     {
-      if(ls == c)
+      if (ls == c)
       {
         return 0;
       }
@@ -110,7 +110,7 @@ main(int argc, char** argv)
   b.Sum(b.Add(b.Add("c","c"),"c"));
   b.Sum(b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c",b.Add("c","c")))))))))));
   b.Sum(b.Add(b.Add(b.Add(b.Add(b.Add(b.Add(b.Add(b.Add(b.Add(b.Add("c","c"),"c"),"c"),"c"),"c"),"c"),"c"),"c"),"c"),"c"));
-  if(!b.compile())
+  if (!b.compile())
   {
     printf("Failed to compile.\n");
     return 1;

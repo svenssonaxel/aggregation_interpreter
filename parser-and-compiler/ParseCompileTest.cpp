@@ -50,7 +50,7 @@ main(int argc, char** argv)
   memcpy(string_to_parse.str, cmdline_arg, cmdline_arg_len);
   string_to_parse.str[cmdline_arg_len] = '\0';
   string_to_parse.str[cmdline_arg_len+1] = '\0';
-  if(argc==3)
+  if (argc==3)
   {
     // Test a string containing a null byte at a certain position
     string_to_parse.str[atoi(argv[2])] = '\0';
@@ -59,34 +59,34 @@ main(int argc, char** argv)
   try
   {
     RestSQLPreparer prepare(string_to_parse, &aalloc);
-    if(!prepare.parse())
+    if (!prepare.parse())
     {
       printf("Failed to parse.\n");
       return 1;
     }
-    if(!prepare.load())
+    if (!prepare.load())
     {
       printf("Failed to load.\n");
       return 1;
     }
-    if(!prepare.compile())
+    if (!prepare.compile())
     {
       printf("Failed to compile.\n");
       return 1;
     }
-    if(!prepare.print())
+    if (!prepare.print())
     {
       printf("Failed to print.\n");
       return 1;
     }
   }
-  catch(std::runtime_error& e)
+  catch (std::runtime_error& e)
   {
     printf("Caught exception: %s\n", e.what());
     return 1;
   }
 
-  if(argc == 1)
+  if (argc == 1)
   {
     printf("Usage: %s SQL_QUERY_1 [ SQL_QUERY_2 ... ]\n", argv[0]);
   }

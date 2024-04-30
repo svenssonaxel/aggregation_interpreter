@@ -73,7 +73,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
     THIS = ((typeof(THIS)) \
             context->alloc( \
               sizeof(*(THIS)))); \
-  } while(0)
+  } while (0)
 }
 
 /* This defines the datatype for an AST node. This includes lexer tokens. */

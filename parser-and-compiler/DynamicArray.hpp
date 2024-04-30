@@ -72,22 +72,23 @@ public:
    */
   void push(const T& item)
   {
-    if(!(item_count < (item_count + 1)))
+    if (!(item_count < (item_count + 1)))
     {
       // overflow_error inherits from runtime_error.
       throw std::overflow_error("DynamicArray::push: item count overflow");
     }
     uint page = (item_count >> BITS);
     uint idx = item_count & IDX_MASK;
-    if(idx == 0)
+    if (idx == 0)
     {
-      if(page >= pages_capacity)
+      if (page >= pages_capacity)
       {
-        #define max(a, b) ((a) > (b) ? (a) : (b))
-        uint newCapacity = max(INITIAL_PAGES_CAPACITY, pages_capacity * 2);
+        uint newCapacity = (INITIAL_PAGES_CAPACITY) > (pages_capacity * 2)
+                           ? (INITIAL_PAGES_CAPACITY)
+                           : (pages_capacity * 2);
         T** newPages =
           static_cast<T**>(allocator->alloc(newCapacity * sizeof(T*)));
-        if(pages_capacity > 0)
+        if (pages_capacity > 0)
         {
           memcpy(newPages, pages, pages_capacity * sizeof(T*));
         }
@@ -127,9 +128,9 @@ public:
   bool has_item(T* item)
   {
     uint lastPage = (item_count-1) >> BITS;
-    for(uint page = 0; page <= lastPage; page++)
+    for (uint page = 0; page <= lastPage; page++)
     {
-      if(pages[page] <= item && item < pages[page] + ITEMS_PER_PAGE)
+      if (pages[page] <= item && item < pages[page] + ITEMS_PER_PAGE)
       {
         uint idx = item - pages[page];
         T* wouldBe = &pages[page][idx];

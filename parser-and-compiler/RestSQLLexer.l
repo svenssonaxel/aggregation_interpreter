@@ -296,7 +296,7 @@ sum     keyword(SUM);
 }
 <QUOTED_IDENTIFIER>{QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK}+ {
   char* dest = yylval->str.str + yylval->str.len;
-  if(dest != yytext)
+  if (dest != yytext)
   {
     memmove(dest, yytext, yyleng);
     context->m_undo.push(RestSQLPreparer::Undo{dest, yytext, yyleng});
@@ -305,7 +305,7 @@ sum     keyword(SUM);
 }
 <QUOTED_IDENTIFIER>`` {
   char* dest = yylval->str.str + yylval->str.len;
-  if(dest != yytext)
+  if (dest != yytext)
   {
     yylval->str.str[yylval->str.len] = '`';
     context->m_undo.push(RestSQLPreparer::Undo{dest, yytext, 1});

@@ -52,10 +52,10 @@ private:
   struct Page* m_current_page = NULL;
   byte* m_point = NULL;
   byte* m_stop = NULL;
-  #ifdef ARENA_ALLOCATOR_DEBUG
+# ifdef ARENA_ALLOCATOR_DEBUG
   uint m_allocated_by_us = sizeof(ArenaAllocator);
   uint m_allocated_by_user = 0;
-  #endif
+# endif
   byte m_initial_stack_allocated_page[INITIAL_PAGE_SIZE]; // MUST be last!
 public:
   ArenaAllocator();
