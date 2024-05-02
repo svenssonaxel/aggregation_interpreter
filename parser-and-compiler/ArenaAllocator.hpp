@@ -61,7 +61,7 @@ public:
   ArenaAllocator();
   ~ArenaAllocator();
   void* alloc(size_t size);
-  void* realloc(void* ptr, size_t size, size_t original_size);
+  void* realloc(const void* ptr, size_t size, size_t original_size);
 };
 
 #endif

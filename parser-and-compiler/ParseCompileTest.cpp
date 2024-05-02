@@ -42,23 +42,20 @@ main(int argc, char** argv)
   // bison requires two NUL bytes at end
   char* cmdline_arg = argv[1];
   int cmdline_arg_len = strlen(cmdline_arg);
-  LexString string_to_parse =
-  {
-    static_cast<char*>(aalloc.alloc((cmdline_arg_len+2) * sizeof(char))),
-    (cmdline_arg_len+2) * sizeof(char)
-  };
-  memcpy(string_to_parse.str, cmdline_arg, cmdline_arg_len);
-  string_to_parse.str[cmdline_arg_len] = '\0';
-  string_to_parse.str[cmdline_arg_len+1] = '\0';
+  char* parse_str = static_cast<char*>(aalloc.alloc((cmdline_arg_len+2) * sizeof(char)));
+  size_t parse_len = (cmdline_arg_len+2) * sizeof(char);
+  memcpy(parse_str, cmdline_arg, cmdline_arg_len);
+  parse_str[cmdline_arg_len] = '\0';
+  parse_str[cmdline_arg_len+1] = '\0';
   if (argc==3)
   {
     // Test a string containing a null byte at a certain position
-    string_to_parse.str[atoi(argv[2])] = '\0';
+    parse_str[atoi(argv[2])] = '\0';
   }
 
   try
   {
-    RestSQLPreparer prepare(string_to_parse, &aalloc);
+    RestSQLPreparer prepare(parse_str, parse_len, &aalloc);
     if (!prepare.parse())
     {
       printf("Failed to parse.\n");

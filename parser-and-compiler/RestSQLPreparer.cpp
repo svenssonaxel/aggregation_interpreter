@@ -31,7 +31,8 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-RestSQLPreparer::RestSQLPreparer(LexString modifiable_SQL,
+RestSQLPreparer::RestSQLPreparer(char* sql_buffer,
+                                 size_t sql_len,
                                  ArenaAllocator* aalloc):
   m_identifiers(aalloc),
   m_aalloc(aalloc),
@@ -45,15 +46,18 @@ RestSQLPreparer::RestSQLPreparer(LexString modifiable_SQL,
    * bytes are not scanned.
    * See https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_node/flex_12.html
    */
-  char* buffer = modifiable_SQL.str;
-  uint flex_buffer_len = modifiable_SQL.len;
-  assert(buffer[flex_buffer_len-1] == '\0');
-  assert(buffer[flex_buffer_len-2] == '\0');
+  assert(sql_buffer[sql_len-1] == '\0');
+  assert(sql_buffer[sql_len-2] == '\0');
   rsqlp_lex_init_extra(&m_context, &m_scanner);
-  m_buf = rsqlp__scan_buffer(buffer, flex_buffer_len, m_scanner);
+  // The non-const sql_buffer is only used to initialize the flex scanner. The
+  // flex scanner shouldn't modify it either, but only because we have removed
+  // the buffer-modifying code from the generated output (see Makefile rule
+  // RestSQLLexer.l.cpp: RestSQLLexer.l.with-yy_hold_char.cpp). For this reason,
+  // the lexer still declares the buffer as non-const.
+  m_buf = rsqlp__scan_buffer(sql_buffer, sql_len, m_scanner);
   // We don't want the NUL bytes that flex requires.
-  uint our_buffer_len = flex_buffer_len - 2;
-  m_sql = { buffer, our_buffer_len };
+  uint our_buffer_len = sql_len - 2;
+  m_sql = { (const char*)(sql_buffer), our_buffer_len };
 }
 
 #define assert_status(name) assert(m_status == Status::name)
@@ -221,7 +225,7 @@ RestSQLPreparer::parse()
 bool
 RestSQLPreparer::has_width(uint pos)
 {
-  char* s = m_sql.str;
+  const char* s = m_sql.str;
   char c = s[pos];
   if ((c & 0xc0) != 0x80) return true;
   if (pos < 1) return true;

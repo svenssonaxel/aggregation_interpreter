@@ -90,6 +90,10 @@ ArenaAllocator::alloc(size_t size)
 }
 
 /*
+ * WARNING: ArenaAllocator::realloc can return a non-const pointer to the same
+ *          memory as the argument `const void* ptr`. Make sure not to write to
+ *          ptr[X] for any X<original_size.
+ *
  * This realloc differs from the standard by requiring the size of the original
  * allocation. This gives several advantages:
  * 1) ArenaAllocator has no need to keep track of allocation sizes.
@@ -99,7 +103,7 @@ ArenaAllocator::alloc(size_t size)
  *    is the result of concatenating several allocations.
  */
 void*
-ArenaAllocator::realloc(void* ptr, size_t size, size_t original_size)
+ArenaAllocator::realloc(const void* ptr, size_t size, size_t original_size)
 {
   byte* byte_ptr = (byte*)ptr;
   if(&byte_ptr[original_size] == m_point &&
@@ -112,7 +116,9 @@ ArenaAllocator::realloc(void* ptr, size_t size, size_t original_size)
     // we can reallocate in-place.
     m_point += (size - original_size);
     assert(m_point == &byte_ptr[size]);
-    return ptr;
+    void* nonconst_ptr = &m_point[-size];
+    assert((const void*)nonconst_ptr == ptr);
+    return nonconst_ptr;
   }
   // Do not reallocate in-place.
   void* new_alloc = alloc(size);

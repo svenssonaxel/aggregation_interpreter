@@ -131,7 +131,7 @@ private:
   bool has_width(uint pos);
 
 public:
-  RestSQLPreparer(LexString modifiable_SQL, ArenaAllocator* aalloc);
+  RestSQLPreparer(char* sql_buffer, size_t sql_len, ArenaAllocator* aalloc);
   bool parse();
   bool load();
   bool compile();

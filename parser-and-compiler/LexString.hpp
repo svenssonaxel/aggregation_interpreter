@@ -33,7 +33,7 @@
 class LexString
 {
 public:
-  char *str;
+  const char *str;
   size_t len;
   LexString() = default;
   LexString(const LexString& other) = default;
