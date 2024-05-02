@@ -93,8 +93,12 @@
 #include <stdio.h>
 #include "RestSQLParser.y.hpp"
 #define YY_DECL int yylex(RSQLP_STYPE* yylval_param, yyscan_t yyscanner)
-#define punctuation(token) return T_ ## token
-#define keyword(token) return T_ ## token
+#define keyword(token) return T_ ## token;
+#define pos_keyword(token) do { \
+  yylval->pos_keyword.type = T_ ## token; \
+  yylval->pos_keyword.begin = yytext; \
+  return T_ ## token; \
+} while(0)
 #define context yyextra
 %}
 
@@ -242,24 +246,25 @@ QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK                            [^\0`\200
 
  /* Section for functionality (happy path) rules */
 
-"+" punctuation(PLUS);
-"-" punctuation(MINUS);
-"*" punctuation(MULTIPLY);
-"/" punctuation(DIVIDE);
-"%" punctuation(MODULO);
-"(" punctuation(LEFT);
-")" punctuation(RIGHT);
-"," punctuation(COMMA);
-";" punctuation(SEMICOLON);
+"%" keyword(MODULO);
+"(" keyword(LEFT);
+")" pos_keyword(RIGHT);
+"*" keyword(MULTIPLY);
+"+" keyword(PLUS);
+"," keyword(COMMA);
+"-" keyword(MINUS);
+"/" keyword(DIVIDE);
+";" keyword(SEMICOLON);
 
+as      keyword(AS);
 by      keyword(BY);
-count   keyword(COUNT);
+count   pos_keyword(COUNT);
 from    keyword(FROM);
 group   keyword(GROUP);
-max     keyword(MAX);
-min     keyword(MIN);
+max     pos_keyword(MAX);
+min     pos_keyword(MIN);
 select  keyword(SELECT);
-sum     keyword(SUM);
+sum     pos_keyword(SUM);
 
 [ \t\r\n] ; // ignore whitespace
 

@@ -119,3 +119,4 @@ select count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)
       ,max(d*e/f-b/c/f)
       ,min((ee+f)/(g-h))
 from table;'
+runtest "Alias" ./ParseCompileTest $'select a, b as c, `d` as `e``e`, `f``f` as g, count(h+i/`j``j`) as k from table;'

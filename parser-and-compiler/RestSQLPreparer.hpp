@@ -41,6 +41,7 @@ struct yy_buffer_state;
 struct Outputs
 {
   bool is_agg;
+  LexString output_name;
   union
   {
     LexString col_name;

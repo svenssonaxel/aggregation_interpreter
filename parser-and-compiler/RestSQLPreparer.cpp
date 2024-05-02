@@ -352,7 +352,9 @@ RestSQLPreparer::print()
   int agg_count = 0;
   while (outputs != NULL)
   {
-    cout << "  Out_" << out_count << "=";
+    cout << "  Out_" << out_count << ":";
+    m_agg->print_quoted_identifier(outputs->output_name);
+    cout << "\n   = ";
     if (outputs->is_agg)
     {
       cout << "A" << agg_count << ":";

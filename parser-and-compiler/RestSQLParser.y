@@ -82,6 +82,10 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
   int ival;
   float fval;
   LexString str;
+  struct {
+    int type;
+    char* begin;
+  } pos_keyword;
   struct lsl
   {
     LexString str;
@@ -94,9 +98,9 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 
 %token<ival> T_INT
 %token<fval> T_FLOAT
-%token T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_LEFT T_RIGHT
-%token T_COUNT T_MAX T_MIN T_SUM
-%token T_SELECT T_FROM T_GROUP T_BY
+%token T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_LEFT
+%token<pos_keyword> T_COUNT T_MAX T_MIN T_SUM T_RIGHT
+%token T_SELECT T_FROM T_GROUP T_BY T_AS
 %token T_SEMICOLON
 
 %left T_PLUS T_MINUS
@@ -107,17 +111,17 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 %token<str> T_IDENTIFIER
 %token T_COMMA
 
-%type<str> identifier table
+%type<str> identifier
 %type<groupby_columns> groupby_opt groupby groupby_columns groupby_column
-%type<outputs> outputlist output
-%type<ival> aggfun
+%type<outputs> outputlist output aliased_output nonaliased_output
+%type<pos_keyword> aggfun
 %type<arith_expr> arith_expr
 
 %start selectstatement
 
 %%
 
-selectstatement: T_SELECT outputlist T_FROM table groupby_opt T_SEMICOLON
+selectstatement: T_SELECT outputlist T_FROM identifier groupby_opt T_SEMICOLON
                  {
                    context->ast_root.outputs = $2;
                    context->ast_root.table = $4;
@@ -134,37 +138,52 @@ outputlist: output
               $$->next = $3;
             }
 
-output: identifier
-        {
-          initptr($$);
-          $$->is_agg = false;
-          $$->col_name = $1;
-          $$->next = NULL;
-        }
-      | aggfun T_LEFT arith_expr T_RIGHT
-        {
-          initptr($$);
-          $$->is_agg = true;
-          $$->aggregate.fun = $1;
-          $$->aggregate.arg = $3;
-          $$->next = NULL;
-        }
+output: aliased_output
+      | nonaliased_output
+
+aliased_output: nonaliased_output T_AS identifier
+                {
+                  $$ = $1;
+                  $$->output_name = $3;
+                }
+
+nonaliased_output: identifier
+                   {
+                     initptr($$);
+                     $$->is_agg = false;
+                     $$->col_name = $1;
+                     $$->output_name = $$->col_name;
+                     $$->next = NULL;
+                   }
+                 | aggfun T_LEFT arith_expr T_RIGHT
+                   {
+                     initptr($$);
+                     $$->is_agg = true;
+                     $$->aggregate.fun = $1.type;
+                     $$->aggregate.arg = $3;
+                     char* aggfun_begin = $1.begin;
+                     char* aggfun_end = $4.begin + 1;
+                     assert(aggfun_begin < aggfun_end);
+                     size_t aggfun_len = aggfun_end - aggfun_begin;
+                     $$->output_name = LexString{aggfun_begin, aggfun_len};
+                     $$->next = NULL;
+                   }
 
 aggfun: T_COUNT
         {
-          $$ = T_COUNT;
+          $$ = $1;
         }
       | T_MAX
         {
-          $$ = T_MAX;
+          $$ = $1;
         }
       | T_MIN
         {
-          $$ = T_MIN;
+          $$ = $1;
         }
       | T_SUM
         {
-          $$ = T_SUM;
+          $$ = $1;
         }
 
 arith_expr: identifier
@@ -200,11 +219,6 @@ identifier: T_IDENTIFIER
             {
               $$ = $1;
             }
-
-table: identifier
-       {
-         $$ = $1;
-       }
 
 groupby_opt: {
                $$ = NULL;

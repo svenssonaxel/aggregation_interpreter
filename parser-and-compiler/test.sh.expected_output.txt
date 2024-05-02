@@ -466,7 +466,8 @@ Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
 
 ===== Simple =====
 SELECT
-  Out_0=C0:`a`
+  Out_0:`a`
+   = C0:`a`
 FROM table
 
 No aggregation program.
@@ -475,11 +476,16 @@ No aggregation program.
 
 ===== Arithmetics =====
 SELECT
-  Out_0=C5:`a`
-  Out_1=A0:Count(`b`)
-  Out_2=A1:Min(((`b` + `c`) / (`d` - `e`)))
-  Out_3=A2:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
-  Out_4=A3:Count((((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (`b` + `c`))))
+  Out_0:`a`
+   = C5:`a`
+  Out_1:`count(b)`
+   = A0:Count(`b`)
+  Out_2:`min((b+c)/(d-e))`
+   = A1:Min(((`b` + `c`) / (`d` - `e`)))
+  Out_3:`max(d*e/f-b/c/f)`
+   = A2:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
+  Out_4:`count(b/c/f+d*e/f*(b+c))`
+   = A3:Count((((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (`b` + `c`))))
 FROM table
 
 Aggregation program (23 instructions):
@@ -512,11 +518,16 @@ Count  A03  r02 A03:COUNT <- r02:(((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (
 
 ===== Quoted ID =====
 SELECT
-  Out_0=C5:`a`
-  Out_1=C6:`b`
-  Out_2=C7:`c``c`
-  Out_3=A0:Count(`d`)
-  Out_4=A1:Min(((`e``e` + `f`) / (`g` - `h`)))
+  Out_0:`a`
+   = C5:`a`
+  Out_1:`b`
+   = C6:`b`
+  Out_2:`c``c`
+   = C7:`c``c`
+  Out_3:`count(``d``)`
+   = A0:Count(`d`)
+  Out_4:`min((``e````e``+``f``)/(g-``h``))`
+   = A1:Min(((`e``e` + `f`) / (`g` - `h`)))
 FROM table
 
 Aggregation program (10 instructions):
@@ -536,7 +547,8 @@ Min    A01  r00 A01:MIN <- r00:((`e``e` + `f`) / (`g` - `h`))
 
 ===== UTF-8 2-byte character in unquoted identifier =====
 SELECT
-  Out_0=C0:`aå`
+  Out_0:`aå`
+   = C0:`aå`
 FROM table
 
 No aggregation program.
@@ -545,7 +557,8 @@ No aggregation program.
 
 ===== UTF-8 2-byte character in quoted identifier =====
 SELECT
-  Out_0=C0:`aå`
+  Out_0:`aå`
+   = C0:`aå`
 FROM table
 
 No aggregation program.
@@ -554,7 +567,8 @@ No aggregation program.
 
 ===== UTF-8 3-byte character in unquoted identifier =====
 SELECT
-  Out_0=C0:`aᚱ`
+  Out_0:`aᚱ`
+   = C0:`aᚱ`
 FROM table
 
 No aggregation program.
@@ -563,7 +577,8 @@ No aggregation program.
 
 ===== UTF-8 3-byte character in quoted identifier =====
 SELECT
-  Out_0=C0:`aᚱ`
+  Out_0:`aᚱ`
+   = C0:`aᚱ`
 FROM table
 
 No aggregation program.
@@ -572,7 +587,8 @@ No aggregation program.
 
 ===== Control character in quoted identifier =====
 SELECT
-  Out_0=C0:`a`
+  Out_0:`a`
+   = C0:`a`
 FROM table
 
 No aggregation program.
@@ -581,9 +597,12 @@ No aggregation program.
 
 ===== has_item regression =====
 SELECT
-  Out_0=A0:Count(((((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`))
-  Out_1=A1:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
-  Out_2=A2:Min(((`ee` + `f`) / (`g` - `h`)))
+  Out_0:`count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)`
+   = A0:Count(((((((((((((((((`a` + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`) + `a`))
+  Out_1:`max(d*e/f-b/c/f)`
+   = A1:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
+  Out_2:`min((ee+f)/(g-h))`
+   = A2:Min(((`ee` + `f`) / (`g` - `h`)))
 FROM table
 
 Aggregation program (37 instructions):
@@ -625,5 +644,30 @@ Load   r02  C08 r02 = C08:`h`
 Minus  r01  r02 r01:`g` -= r02:`h`
 Div    r00  r01 r00:(`ee` + `f`) /= r01:(`g` - `h`)
 Min    A02  r00 A02:MIN <- r00:((`ee` + `f`) / (`g` - `h`))
+
+=> Exit code: 0
+
+===== Alias =====
+SELECT
+  Out_0:`a`
+   = C3:`a`
+  Out_1:`c`
+   = C4:`b`
+  Out_2:`e``e`
+   = C5:`d`
+  Out_3:`g`
+   = C6:`f``f`
+  Out_4:`k`
+   = A0:Count((`h` + (`i` / `j``j`)))
+FROM table
+
+Aggregation program (6 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C01 r00 = C01:`i`
+Load   r01  C02 r01 = C02:`j``j`
+Div    r00  r01 r00:`i` /= r01:`j``j`
+Load   r01  C00 r01 = C00:`h`
+Add    r01  r00 r01:`h` += r00:(`i` / `j``j`)
+Count  A00  r01 A00:COUNT <- r01:(`h` + (`i` / `j``j`))
 
 => Exit code: 0
