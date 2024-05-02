@@ -41,7 +41,7 @@ public:
   ~LexString() = default;
   friend std::ostream& operator<< (std::ostream& out, const LexString& ls);
   bool operator== (const LexString& other) const;
-  LexString concat(const LexString other, ArenaAllocator allocator);
+  LexString concat(const LexString other, ArenaAllocator* allocator);
 };
 
 #endif

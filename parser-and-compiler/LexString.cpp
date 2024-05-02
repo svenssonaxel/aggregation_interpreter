@@ -54,7 +54,7 @@ LexString::operator== (const LexString& other) const
   * ends.
  */
 LexString
-LexString::concat(const LexString other, ArenaAllocator allocator)
+LexString::concat(const LexString other, ArenaAllocator* allocator)
 {
   if(this->str == NULL &&
      this->len == 0)
@@ -70,9 +70,9 @@ LexString::concat(const LexString other, ArenaAllocator allocator)
   // It's possible that concatenated_str == this->str. The lifetime of the
   // returned LexString will end when the lifetime of either argument or the
   // allocator ends.
-  char* concatenated_str = (char*)allocator.realloc(this->str,
-                                                    concatenated_len,
-                                                    this->len);
+  char* concatenated_str = (char*)allocator->realloc(this->str,
+                                                     concatenated_len,
+                                                     this->len);
   memcpy(concatenated_str, this->str, this->len);
   memcpy(&concatenated_str[this->len], other.str, other.len);
   return LexString{concatenated_str, concatenated_len};
