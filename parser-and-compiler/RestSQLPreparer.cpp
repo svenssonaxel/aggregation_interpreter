@@ -445,6 +445,18 @@ RestSQLPreparer::Context::set_err_state(ErrState state,
     m_err_pos = err_pos;
     m_err_len = err_len;
   }
+  else
+  {
+    /*
+     * We want to save the error with the left-most position or, if two errors
+     * have the same position, the shorter (more low-level) error. However,
+     * above we actually save the error detected first. Presumably, that's the
+     * same thing, but here we assert so.
+     */
+    assert((m_err_pos < err_pos) ||
+           (m_err_pos == err_pos &&
+            m_err_len <= err_len));
+  }
 }
 
 AggregationAPICompiler*
