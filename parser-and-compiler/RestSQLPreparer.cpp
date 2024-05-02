@@ -352,9 +352,9 @@ RestSQLPreparer::print()
   int agg_count = 0;
   while (outputs != NULL)
   {
-    cout << "  Out_" << out_count << ":";
-    m_agg->print_quoted_identifier(outputs->output_name);
-    cout << "\n   = ";
+    cout << "  Out_" << out_count << ":" <<
+      m_agg->quoted_identifier(outputs->output_name) << endl <<
+      "   = ";
     if (outputs->is_agg)
     {
       cout << "A" << agg_count << ":";
@@ -366,9 +366,8 @@ RestSQLPreparer::print()
     {
       auto col_name = outputs->col_name;
       auto col_idx = column_name_to_idx(col_name);
-      cout << "C" << col_idx << ":";
-      m_agg->print_quoted_identifier(col_name);
-      cout << endl;
+      cout << "C" << col_idx << ":" <<
+        m_agg->quoted_identifier(col_name) << endl;
       col_count++;
     }
     out_count++;

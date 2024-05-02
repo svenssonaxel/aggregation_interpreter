@@ -830,7 +830,7 @@ AggregationAPICompiler::print(Expr* expr)
   }
   if (expr->op == AggregationAPICompiler::ExprOp::Load)
   {
-    print_quoted_identifier(m_column_idx_to_name(expr->colidx));
+    cout << quoted_identifier(m_column_idx_to_name(expr->colidx));
     return;
   }
   printf("(");
@@ -888,7 +888,7 @@ AggregationAPICompiler::print(Instr* instr)
     assert_reg(dest);
     printf("Load   r%02d  C%02d r%02d = C%02d:",
            dest, src, dest, src);
-    print_quoted_identifier(m_column_idx_to_name(src));
+    cout << quoted_identifier(m_column_idx_to_name(src));
     break;
   case SVMInstrType::Mov:
     assert_reg(dest); assert_reg(src);
@@ -907,22 +907,25 @@ AggregationAPICompiler::print(Instr* instr)
 #undef OPERATOR_CASE
 #undef AGG_CASE
 
-void
-AggregationAPICompiler::print_quoted_identifier(LexString id)
+std::ostream &
+operator<< (std::ostream& os,
+            const AggregationAPICompiler::QuotedIdentifier& identifier)
 {
-  printf("`");
+  const LexString& id = identifier.m_id;
+  os.put('`');
   for (uint i=0; i < id.len; i++)
   {
     if (id.str[i] == '`')
     {
-      printf("``");
+      os.write("``", 2);
     }
     else
     {
-      printf("%c", id.str[i]);
+      os.put(id.str[i]);
     }
   }
-  printf("`");
+  os.put('`');
+  return os;
 }
 
 /*

@@ -218,7 +218,18 @@ public:
   void print(Expr* expr);
   void print_program();
   void print(Instr* instr);
-  static void print_quoted_identifier(LexString id);
+  // Wrapper class for printing quoted identifiers
+  class QuotedIdentifier {
+  public:
+    const LexString m_id;
+    QuotedIdentifier(const LexString identifier) : m_id(identifier) {}
+    friend std::ostream& operator<< (std::ostream& out,
+                                     const QuotedIdentifier& identifier);
+  };
+  QuotedIdentifier quoted_identifier(LexString id) const
+  {
+    return QuotedIdentifier(id);
+  }
 
 }; // End of class AggregationAPICompiler
 
