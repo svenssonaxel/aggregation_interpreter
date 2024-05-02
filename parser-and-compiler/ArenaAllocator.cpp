@@ -22,6 +22,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+#include <cstring> // memcpy
 #include "ArenaAllocator.hpp"
 
 ArenaAllocator::ArenaAllocator()
@@ -86,4 +87,36 @@ ArenaAllocator::alloc(size_t size)
   m_allocated_by_user += size;
 # endif
   return ret;
+}
+
+/*
+ * This realloc differs from the standard by requiring the size of the original
+ * allocation. This gives several advantages:
+ * 1) ArenaAllocator has no need to keep track of allocation sizes.
+ * 2) ArenaAllocator can reallocate memory that was allocated by other means
+ *    than itself, on the condition that no free() is necessary.
+ * 3) ArenaAllocator can potentially reallocate in-place a block of memory that
+ *    is the result of concatenating several allocations.
+ */
+void*
+ArenaAllocator::realloc(void* ptr, size_t size, size_t original_size)
+{
+  byte* byte_ptr = (byte*)ptr;
+  if(&byte_ptr[original_size] == m_point &&
+     size >= original_size &&
+     &byte_ptr[size] <= m_stop)
+  {
+    // The original allocation ends precisely where our unused memory begins,
+    // the reallocation will increase the size, and the unused memory on the
+    // current page is sufficient to accommodate the new allocation. Therefore,
+    // we can reallocate in-place.
+    m_point += (size - original_size);
+    assert(m_point == &byte_ptr[size]);
+    return ptr;
+  }
+  // Do not reallocate in-place.
+  void* new_alloc = alloc(size);
+  size_t cplen = size < original_size ? size : original_size;
+  memcpy(new_alloc, ptr, cplen);
+  return new_alloc;
 }
