@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include "ArenaAllocator.hpp"
 
 class LexString
 {
@@ -40,6 +41,7 @@ public:
   ~LexString() = default;
   friend std::ostream& operator<< (std::ostream& out, const LexString& ls);
   bool operator== (const LexString& other) const;
+  LexString concat(const LexString other, ArenaAllocator allocator);
 };
 
 #endif

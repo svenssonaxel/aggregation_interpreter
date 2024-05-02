@@ -38,3 +38,33 @@ LexString::operator== (const LexString& other) const
   if (len == 0) return true;
   return memcmp(str, other.str, len) == 0;
 }
+
+/*
+ * Return a concatenation of two LexStrings. The lifetime of the returned
+ * LexString will end when the lifetime of either argument or the allocator
+  * ends.
+ */
+LexString
+LexString::concat(const LexString other, ArenaAllocator allocator)
+{
+  if(this->str == NULL &&
+     this->len == 0)
+  {
+    return other;
+  }
+  if(&this->str[this->len] == other.str) {
+    // The lifetime of the returned LexString will end when the lifetime of
+    // either argument ends.
+    return LexString{this->str, this->len + other.len};
+  }
+  size_t concatenated_len = this->len + other.len;
+  // It's possible that concatenated_str == this->str. The lifetime of the
+  // returned LexString will end when the lifetime of either argument or the
+  // allocator ends.
+  char* concatenated_str = (char*)allocator.realloc(this->str,
+                                                    concatenated_len,
+                                                    this->len);
+  memcpy(concatenated_str, this->str, this->len);
+  memcpy(&concatenated_str[this->len], other.str, other.len);
+  return LexString{concatenated_str, concatenated_len};
+}
