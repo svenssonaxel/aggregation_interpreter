@@ -83,13 +83,6 @@ public:
     LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER,
     PARSER_ERROR,
   };
-  struct Undo
-  {
-    // See comment for RestSQLPreparer::restoreOriginalBuffer
-    char* dest;
-    char* src;
-    int len;
-  };
   /*
    * The context class is used to expose parser internals to flex and bison code
    * without making them public.
@@ -104,16 +97,14 @@ public:
     uint m_err_len = 0;
   public:
     Context(RestSQLPreparer& parser):
-      m_parser(parser),
-      m_undo(parser.m_aalloc)
+      m_parser(parser)
     {}
     void set_err_state(ErrState state, char* err_pos, uint err_len);
     AggregationAPICompiler* get_agg();
-    void* alloc(size_t size);
+    ArenaAllocator* get_allocator();
     SelectStatement ast_root;
     char* m_compound_token_pos = NULL;
     uint m_compound_token_len = 0;
-    DynamicArray<Undo> m_undo;
   };
 private:
   enum class Status
@@ -137,7 +128,6 @@ private:
   AggregationAPICompiler* m_agg = NULL;
   int column_name_to_idx(LexString);
   LexString column_idx_to_name(int);
-  void restoreOriginalBuffer();
   bool has_width(uint pos);
 
 public:

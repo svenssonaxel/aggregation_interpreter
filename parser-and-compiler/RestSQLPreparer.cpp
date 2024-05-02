@@ -147,7 +147,6 @@ RestSQLPreparer::parse()
      * Explain the syntax error by showing the message followed by a print of
      * the SQL statement with the problematic section underlined with carets.
      */
-    restoreOriginalBuffer();
     cerr << "Syntax error in SQL statement: " << msg << endl;
     uint line_started_at = 0;
     for (uint pos = 0; pos <= m_sql.len; pos++)
@@ -394,30 +393,6 @@ RestSQLPreparer::print()
   return true;
 }
 
-/*
- * This function uses an undo log to restore the buffer to its original state.
- * This is useful when we have a parse error and need the original SQL to
- * describe the error. For performance reasons we don't want to keep a copy
- * around. The undo log itself has little performance impact since it is very
- * seldom used.
- */
-void
-RestSQLPreparer::restoreOriginalBuffer()
-{
-  // Restoring the buffer can alter the contents of some LexString objects that
-  // are needed during loading, so make sure we're in a failed state.
-  assert_status(FAILED);
-  DynamicArray<Undo>& undos = m_context.m_undo;
-  for (int i=0; i < undos.size(); i++)
-  {
-    Undo& undo = undos[undos.size()-i-1]; // reverse order
-    memmove(undo.src, undo.dest, undo.len); // reverse move
-  }
-  // Truncate undo log to prevent double undo
-  m_context.m_undo.truncate();
-  assert(m_context.m_undo.size() == 0);
-}
-
 int
 RestSQLPreparer::column_name_to_idx(LexString col_name)
 {
@@ -510,8 +485,8 @@ RestSQLPreparer::Context::get_agg()
   return m_parser.m_agg;
 }
 
-void*
-RestSQLPreparer::Context::alloc(size_t size)
+ArenaAllocator*
+RestSQLPreparer::Context::get_allocator()
 {
-  return m_parser.m_aalloc->alloc(size);
+  return m_parser.m_aalloc;
 }

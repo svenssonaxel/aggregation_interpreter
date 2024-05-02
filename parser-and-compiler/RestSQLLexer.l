@@ -291,30 +291,18 @@ sum     keyword(SUM);
 
 ` {
   BEGIN(QUOTED_IDENTIFIER);
-  yylval->str.str = &yytext[1];
-  yylval->str.len = 0;
+  yylval->str = LexString{ NULL, 0};
+  context->m_compound_token_pos = yytext;
+  context->m_compound_token_len = 0;
 }
 <QUOTED_IDENTIFIER>{QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK}+ {
-  char* dest = yylval->str.str + yylval->str.len;
-  if (dest != yytext)
-  {
-    memmove(dest, yytext, yyleng);
-    context->m_undo.push(RestSQLPreparer::Undo{dest, yytext, yyleng});
-  }
-  yylval->str.len += yyleng;
+    yylval->str = yylval->str.concat(LexString{ yytext, size_t(yyleng) },
+                                     context->get_allocator());
 }
 <QUOTED_IDENTIFIER>`` {
-  char* dest = yylval->str.str + yylval->str.len;
-  if (dest != yytext)
-  {
-    yylval->str.str[yylval->str.len] = '`';
-    context->m_undo.push(RestSQLPreparer::Undo{dest, yytext, 1});
-  }
-  context->m_undo.push(RestSQLPreparer::Undo{dest, yytext + 1, 1});
-  yylval->str.len++;
+  yylval->str = yylval->str.concat(LexString{ yytext, 1 }, context->get_allocator());
 }
 <QUOTED_IDENTIFIER>` {
-  context->m_compound_token_pos = yylval->str.str - 1;
   context->m_compound_token_len = yytext + 1 - context->m_compound_token_pos;
   BEGIN(INITIAL);
   return T_IDENTIFIER;
@@ -322,8 +310,8 @@ sum     keyword(SUM);
 <QUOTED_IDENTIFIER><<EOF>> {
   context->set_err_state(
     RestSQLPreparer::ErrState::LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER,
-    yylval->str.str - 1,
-    yytext - yylval->str.str + 1);
+    context->m_compound_token_pos,
+    yytext - context->m_compound_token_pos);
   return T_ERR;
 }
 
@@ -349,7 +337,7 @@ sum     keyword(SUM);
 void*
 rsqlp_alloc(size_t bytes, void * scanner)
 {
-  return rsqlp_get_extra(scanner)->alloc(bytes);
+  return rsqlp_get_extra(scanner)->get_allocator()->alloc(bytes);
 }
 
 void*

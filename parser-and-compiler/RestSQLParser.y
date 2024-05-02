@@ -44,7 +44,7 @@ typedef void * yyscan_t;
 #include "AggregationAPICompiler.hpp"
 
 // Let bison use RestSQLPreparer's arena allocator
-#define YYMALLOC(SIZE) context->alloc(SIZE)
+#define YYMALLOC(SIZE) context->get_allocator()->alloc(SIZE)
 #define YYFREE(PTR) void()
 
 #define yycheck rsqlp_check
@@ -71,7 +71,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 #define initptr(THIS) do \
   { \
     THIS = ((typeof(THIS)) \
-            context->alloc( \
+            context->get_allocator()->alloc( \
               sizeof(*(THIS)))); \
   } while (0)
 }
