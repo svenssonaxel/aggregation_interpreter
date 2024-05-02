@@ -176,6 +176,15 @@ RestSQLPreparer::parse()
       {
         cerr << "! ";
         uint err_marker_pos = line_started_at;
+        // We use has_width to find the number of code points in the string
+        // before and inside the error. This is a quite crude approximation of
+        // the number of graphemes. Thus, the error marker will be misaligned
+        // whenever the number of graphemes do not match the number of code
+        // points, e.g. when the string contains combining, zero-width or
+        // control characters that are often used with emojis or with diacritics
+        // that are unusual or NFD/NDKD normalized. This approximation is used
+        // for the sake of simplicity and stability, as correctness is less
+        // important in this case.
         while (err_marker_pos < err_pos)
         {
           if (has_width(err_marker_pos))
@@ -206,11 +215,13 @@ RestSQLPreparer::parse()
   return false;
 }
 
+/*
+ * Return false if the position is a UTF-8 continuation byte and part of a
+ * prefix of a correct UTF-8 multi-byte sequence, otherwise true.
+ */
 bool
 RestSQLPreparer::has_width(uint pos)
 {
-  // Return false if the position is a UTF-8 continuation byte and part of a
-  // prefix of a correct UTF-8 multi-byte sequence, otherwise true.
   char* s = m_sql.str;
   char c = s[pos];
   if ((c & 0xc0) != 0x80) return true;

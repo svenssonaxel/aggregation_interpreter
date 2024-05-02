@@ -31,6 +31,15 @@ operator<< (std::ostream& os, const LexString& ls)
   return os;
 };
 
+/*
+ * Byte by byte comparison. This can still return false for two equivalent UTF-8
+ * strings if:
+ * 1) The strings are not validated and e.g. one contains an overlong encoded
+ *    character.
+ * 2) The strings are not normalized to the same degree as your definition for
+ *    "equivalent". For example, the two strings "räksmörgås" and "räksmörgås"
+ *    will compare as unequal unless they are first normalized.
+ */
 bool
 LexString::operator== (const LexString& other) const
 {
