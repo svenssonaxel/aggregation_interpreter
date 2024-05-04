@@ -99,12 +99,20 @@ struct GroupbyColumns
   struct GroupbyColumns* next;
 };
 
+struct OrderbyColumns
+{
+  LexString col_name;
+  bool ascending;
+  struct OrderbyColumns* next;
+};
+
 struct SelectStatement
 {
   Outputs* outputs = NULL;
   LexString table = {NULL, 0};
   struct ConditionalExpression* where_expression = NULL;
   struct GroupbyColumns* groupby_columns = NULL;
+  struct OrderbyColumns* orderby_columns = NULL;
 };
 
 class RestSQLPreparer

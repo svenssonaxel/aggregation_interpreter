@@ -270,14 +270,17 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
 ","     keyword(COMMA);
 ";"     keyword(SEMICOLON);
 as      keyword(AS);
+asc     keyword(ASC);
 avg     keyword(AVG);
 by      keyword(BY);
 count   keyword(COUNT);
+desc    keyword(DESC);
 from    keyword(FROM);
 group   keyword(GROUP);
 max     keyword(MAX);
 min     keyword(MIN);
 null    keyword(NULL);
+order   keyword(ORDER);
 select  keyword(SELECT);
 sum     keyword(SUM);
 where   keyword(WHERE);

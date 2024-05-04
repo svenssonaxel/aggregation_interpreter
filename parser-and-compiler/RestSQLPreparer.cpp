@@ -424,8 +424,23 @@ RestSQLPreparer::print()
     {
       auto col_name = groupby->col_name;
       auto col_idx = column_name_to_idx(col_name);
-      cout << "  C" << col_idx << ":" << col_name << endl;
+      cout << "  C" << col_idx << ":" << m_agg->quoted_identifier(col_name) <<
+        endl;
       groupby = groupby->next;
+    }
+  }
+  struct OrderbyColumns* orderby = ast_root.orderby_columns;
+  if (orderby != NULL)
+  {
+    cout << "ORDER BY" << endl;
+    while (orderby != NULL)
+    {
+      LexString col_name = orderby->col_name;
+      int col_idx = column_name_to_idx(col_name);
+      bool ascending = orderby->ascending;
+      cout << "  C" << col_idx << ":" << m_agg->quoted_identifier(col_name) <<
+        (ascending ? " ASC" : " DESC") << endl;
+      orderby = orderby->next;
     }
   }
   cout << endl;
