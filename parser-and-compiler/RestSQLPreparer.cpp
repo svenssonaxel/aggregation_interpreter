@@ -118,6 +118,9 @@ RestSQLPreparer::parse()
   case ErrState::LEX_NONBMP_IDENTIFIER:
     msg = "Unicode code points above U+FFFF are not allowed in MySQL identifiers.";
     break;
+  case ErrState::LEX_UNIMPLEMENTED_KEYWORD:
+    msg = "Unimplemented keyword. If this was intended as an identifier, use backtick quotation.";
+    break;
   case ErrState::LEX_ILLEGAL_TOKEN:
     msg = "Illegal token";
     break;

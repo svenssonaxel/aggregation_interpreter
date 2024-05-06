@@ -1,84 +1,84 @@
 
 ===== Null byte at beginning =====
 Syntax error in SQL statement: Unexpected null byte.
-> Nelect a from table;
+> Nelect a from tbl;
 ! ^
 Failed to parse.
 => Exit code: 1
 
 ===== Null byte in identifier =====
 Syntax error in SQL statement: Unexpected null byte.
-> select aN from table;
+> select aN from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== Null byte at end =====
 Syntax error in SQL statement: Unexpected null byte.
-> select a from tableN
-!                    ^
+> select a from tblN
+!                  ^
 Failed to parse.
 => Exit code: 1
 
 ===== Illegal UTF-8 byte =====
 Syntax error in SQL statement: Bytes 0xf8-0xff are illegal in UTF-8.
-> select aú from table;
+> select aú from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== Illegal 0xc0 UTF-8 byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select aÀ from table;
+> select aÀ from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== Illegal 0xc1 UTF-8 byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select aÁ from table;
+> select aÁ from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== UTF-8 overlong 2-byte sequence =====
 Syntax error in SQL statement: Overlong UTF-8 encoding.
-> select aÁ¡ from table;
+> select aÁ¡ from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== UTF-8 overlong 3-byte sequence =====
 Syntax error in SQL statement: Overlong UTF-8 encoding.
-> select aàƒ¶ from table;
+> select aàƒ¶ from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== Too high code point (U+123456) =====
 Syntax error in SQL statement: Unicode code points above U+10FFFF are invalid.
-> select `aô£‘–` from table;
+> select `aô£‘–` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== Surrogate (U+dead) =====
 Syntax error in SQL statement: Unicode code points U+D800 -- U+DFFF are invalid, as they correspond to UTF-16 surrogate pairs.
-> select `aíº­` from table;
+> select `aíº­` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== Non-BMP UTF-8 in identifier =====
 Syntax error in SQL statement: Unicode code points above U+FFFF are not allowed in MySQL identifiers.
-> select `að “—` from table;
+> select `að “—` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== Illegal token =====
 Syntax error in SQL statement: Illegal token
-> select #a from table;
+> select #a from tbl;
 !        ^
 Failed to parse.
 => Exit code: 1
@@ -99,7 +99,7 @@ Failed to parse.
 
 ===== UTF-8 2-byte sequence with illegal 2nd byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `aÃ` from table;
+> select `aÃ` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
@@ -113,14 +113,14 @@ Failed to parse.
 
 ===== UTF-8 3-byte sequence with illegal 2nd byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `aá` from table;
+> select `aá` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== UTF-8 3-byte sequence with illegal 3rd byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `aáš` from table;
+> select `aáš` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
@@ -141,21 +141,21 @@ Failed to parse.
 
 ===== UTF-8 4-byte sequence with illegal 2nd byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `að` from table;
+> select `að` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== UTF-8 4-byte sequence with illegal 3rd byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `að ` from table;
+> select `að ` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
 
 ===== UTF-8 4-byte sequence with illegal 4th byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select `að “` from table;
+> select `að “` from tbl;
 !          ^
 Failed to parse.
 => Exit code: 1
@@ -183,7 +183,7 @@ Failed to parse.
 
 ===== Rogue UTF-8 continuation byte =====
 Syntax error in SQL statement: Invalid UTF-8 encoding.
-> select a‰ from table;
+> select a‰ from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
@@ -195,35 +195,35 @@ Failed to parse.
 
 ===== Invalid token at beginning =====
 Syntax error in SQL statement: Illegal token
-> select a from table;
+> select a from tbl;
 ! ^
 Failed to parse.
 => Exit code: 1
 
 ===== Control character in unquoted identifier =====
 Syntax error in SQL statement: Illegal token
-> select a from table;
+> select a from tbl;
 !         ^
 Failed to parse.
 => Exit code: 1
 
 ===== Invalid token at end =====
 Syntax error in SQL statement: Illegal token
-> select a from table;
-!                     ^
+> select a from tbl;
+!                   ^
 Failed to parse.
 => Exit code: 1
 
 ===== Unexpected end of input =====
 Syntax error in SQL statement: Unexpected end of input
-> select a from table
-!                    ^
+> select a from tbl
+!                  ^
 Failed to parse.
 => Exit code: 1
 
 ===== Unexpected at this point =====
 Syntax error in SQL statement: Unexpected at this point
-> select a `bcde` from table;
+> select a `bcde` from tbl;
 !          ^^^^^^
 Failed to parse.
 => Exit code: 1
@@ -232,21 +232,21 @@ Failed to parse.
 Syntax error in SQL statement: Unexpected at this point
 > select a `bcde`
 !          ^^^^^^
->  from table;
+>  from tbl;
 Failed to parse.
 => Exit code: 1
 
 ===== Unexpected after newline =====
 Syntax error in SQL statement: Unexpected at this point
 > select a 
-> `bcde` from table;
+> `bcde` from tbl;
 ! ^^^^^^
 Failed to parse.
 => Exit code: 1
 
 ===== Unexpected with ending newline =====
 Syntax error in SQL statement: Unexpected at this point
-> select a `bcde` from table;
+> select a `bcde` from tbl;
 !          ^^^^^^
 > Failed to parse.
 => Exit code: 1
@@ -254,7 +254,7 @@ Syntax error in SQL statement: Unexpected at this point
 ===== Unexpected with newline at start =====
 Syntax error in SQL statement: Unexpected at this point
 > 
-> select a `bcde` from table;
+> select a `bcde` from tbl;
 !          ^^^^^^
 Failed to parse.
 => Exit code: 1
@@ -263,7 +263,7 @@ Failed to parse.
 Syntax error in SQL statement: Unexpected at this point
 > select a `bc
 !          ^^^
-> de` from table;
+> de` from tbl;
 ! ^^^
 Failed to parse.
 => Exit code: 1
@@ -274,14 +274,14 @@ Syntax error in SQL statement: Unexpected at this point
 !          ^^
 > cd
 ! ^^
-> e` from table;
+> e` from tbl;
 ! ^^
 Failed to parse.
 => Exit code: 1
 
 ===== Unexpected escaped identifier =====
 Syntax error in SQL statement: Unexpected at this point
-> select a `bc``de` from table;
+> select a `bc``de` from tbl;
 !          ^^^^^^^^
 Failed to parse.
 => Exit code: 1
@@ -295,8 +295,8 @@ Failed to parse.
 
 ===== Two escaped identifiers, 2nd unexpected =====
 Syntax error in SQL statement: Unexpected at this point
-> select a, `bc``de` from table `fg``h``i`;
-!                               ^^^^^^^^^^
+> select a, `bc``de` from tbl `fg``h``i`;
+!                             ^^^^^^^^^^
 Failed to parse.
 => Exit code: 1
 
@@ -305,7 +305,7 @@ Syntax error in SQL statement: Unexpected at this point
 > select a
 >       ,rÃ¤ksmÃ¶rgÃ¥s rÃ¤ksmÃ¶rgÃ¥s
 !                   ^^^^^^^^^^
-> from table;
+> from tbl;
 Failed to parse.
 => Exit code: 1
 
@@ -314,7 +314,7 @@ Syntax error in SQL statement: Unexpected at this point
 > select a
 >       ,áš±ab áš±ab
 !            ^^^
-> from table;
+> from tbl;
 Failed to parse.
 => Exit code: 1
 
@@ -451,7 +451,7 @@ Sum    A06  r00 A06:SUM <- r00:((((((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) 
 SELECT
   Out_0:`a`
    = C0:`a`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -469,7 +469,7 @@ SELECT
    = A2:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
   Out_4:`count(b/c/f+d*e/f*(b+c))`
    = A3:Count((((`b` / `c`) / `f`) + (((`d` * `e`) / `f`) * (`b` + `c`))))
-FROM table
+FROM tbl
 
 Aggregation program (23 instructions):
 Instr. DEST SRC DESCRIPTION
@@ -511,7 +511,7 @@ SELECT
    = A0:Count(`d`)
   Out_4:`min((``e````e``+``f``)/(g-``h``))`
    = A1:Min(((`e``e` + `f`) / (`g` - `h`)))
-FROM table
+FROM tbl
 
 Aggregation program (10 instructions):
 Instr. DEST SRC DESCRIPTION
@@ -532,7 +532,7 @@ Min    A01  r00 A01:MIN <- r00:((`e``e` + `f`) / (`g` - `h`))
 SELECT
   Out_0:`aÃ¥`
    = C0:`aÃ¥`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -542,7 +542,7 @@ No aggregation program.
 SELECT
   Out_0:`aÃ¥`
    = C0:`aÃ¥`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -552,7 +552,7 @@ No aggregation program.
 SELECT
   Out_0:`aáš±`
    = C0:`aáš±`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -562,7 +562,7 @@ No aggregation program.
 SELECT
   Out_0:`aáš±`
    = C0:`aáš±`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -572,7 +572,7 @@ No aggregation program.
 SELECT
   Out_0:`a`
    = C0:`a`
-FROM table
+FROM tbl
 
 No aggregation program.
 
@@ -586,7 +586,7 @@ SELECT
    = A1:Max((((`d` * `e`) / `f`) - ((`b` / `c`) / `f`)))
   Out_2:`min((ee+f)/(g-h))`
    = A2:Min(((`ee` + `f`) / (`g` - `h`)))
-FROM table
+FROM tbl
 
 Aggregation program (37 instructions):
 Instr. DEST SRC DESCRIPTION
@@ -642,7 +642,7 @@ SELECT
    = C6:`f``f`
   Out_4:`k`
    = A0:Count((`h` + (`i` / `j``j`)))
-FROM table
+FROM tbl
 
 Aggregation program (6 instructions):
 Instr. DEST SRC DESCRIPTION
@@ -663,7 +663,7 @@ SELECT
    = A0:Sum((`col2` + 543))
   Out_2:`subtraction`
    = A1:Max((`col3` - 792))
-FROM table
+FROM tbl
 
 Aggregation program (8 instructions):
 Instr. DEST SRC DESCRIPTION
@@ -692,9 +692,9 @@ SELECT
    = A3:Min(`col2`)
   Out_5:`count(col2)`
    = A2:Count(`col2`)
-  Out_6:`last`
+  Out_6:`lastcol`
    = C2:`col3`
-FROM table
+FROM tbl
 GROUP BY
   C1:col1
   C2:col3
@@ -725,9 +725,9 @@ SELECT
    = A1:Count(1)
   Out_6:`min(col2)`
    = A4:Min(`col2`)
-  Out_7:`last`
+  Out_7:`lastcol`
    = C2:`col3`
-FROM table
+FROM tbl
 GROUP BY
   C1:col1
   C2:col3
@@ -752,9 +752,9 @@ SELECT
    = A0:Sum(`col2`)
   Out_2:`max(col3)`
    = A1:Max(`col3`)
-  Out_3:`last`
+  Out_3:`lastcol`
    = C3:`col4`
-FROM table
+FROM tbl
 WHERE
 XOR
 +- =
@@ -787,7 +787,7 @@ Max    A01  r00 A01:MAX <- r00:`col3`
 SELECT
   Out_0:`a`
    = C0:`a`
-FROM table
+FROM tbl
 WHERE
 AND
 +- OR
