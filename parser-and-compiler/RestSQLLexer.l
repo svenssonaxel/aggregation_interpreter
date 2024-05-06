@@ -35,6 +35,7 @@
 %option outfile="RestSQLLexer.l.with-yy_hold_char.cpp"
 %option header="RestSQLLexer.l.hpp"
 %option bison-bridge
+%option bison-locations
 %option extra-type="RestSQLPreparer::Context*"
 %option prefix="rsqlp_"
 %option case-insensitive
@@ -77,6 +78,7 @@
 %top{
 #include "RestSQLPreparer.hpp"
 #define YYSTYPE RSQLP_STYPE
+#define YYLTYPE RSQLP_LTYPE
 #define yy_accept rsqlp__accept
 #define yy_base rsqlp__base
 #define yy_chk rsqlp__chk
@@ -92,13 +94,26 @@
 %{
 #include <stdio.h>
 #include "RestSQLParser.y.hpp"
-#define YY_DECL int yylex(RSQLP_STYPE* yylval_param, yyscan_t yyscanner)
-#define keyword(token) return T_ ## token;
-#define pos_keyword(token) do { \
-  yylval->pos_keyword.type = T_ ## token; \
-  yylval->pos_keyword.begin = yytext; \
+#define YY_DECL int yylex(RSQLP_STYPE* yylval_param, RSQLP_LTYPE* yylloc_param, yyscan_t yyscanner)
+#define lloc_this_rule() do \
+  { \
+    yylloc->begin = yytext; \
+    yylloc->end = yytext + yyleng; \
+  } while (0)
+#define keyword(token) do { \
+  lloc_this_rule(); \
   return T_ ## token; \
-} while(0)
+} while (0)
+#define return_err(ERR_TOKEN) do { \
+  context->set_err_state( \
+    RestSQLPreparer::ErrState::LEX_ ## ERR_TOKEN, \
+    yylloc->begin, yylloc->end - yylloc->begin); \
+  return T_ERR; \
+} while (0)
+#define return_err_for_this_rule(ERR_TOKEN) do { \
+  lloc_this_rule(); \
+  return_err(ERR_TOKEN); \
+} while (0)
 #define context yyextra
 %}
 
@@ -178,10 +193,7 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
  /* Top section for rules to catch errors */
 
 <*>\0 {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_NUL,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(NUL);
 }
 
 <*>{U_ILLEG_BYTE} {
@@ -191,10 +203,7 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
    * U_OVERLONG or another error rule, potentially leading to slightly more
    * informative error messages.
    */
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_ILLEGAL_BYTE,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(U_ILLEGAL_BYTE);
 }
 
 <*>{U_PARTIAL} {
@@ -204,47 +213,28 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
    * than correct sequences, it has lower priority and will therefore only match
    * a partial multi-byte sequence followed by an unexpected byte or <<EOF>>.
    */
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_ENC_ERR,
-    yytext, 1);
-  return T_ERR;
+   return_err_for_this_rule(U_ENC_ERR);
 }
 
 <*>[\200-\277] {
   // Rogue UTF-8 continuation byte
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_ENC_ERR,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(U_ENC_ERR);
 }
 
 <*>{U_OVERLONG} {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_OVERLONG,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(U_OVERLONG);
 }
 
 <*>{U_TOOHIGH} {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_TOOHIGH,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(U_TOOHIGH);
 }
 
 <*>{U_SURROGATE} {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_U_SURROGATE,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(U_SURROGATE);
 }
 
-<INITIAL,QUOTED_IDENTIFIER>{U_NONBMP}(.|\n)* {
-  // todo: is (.|\n)* necessary above?
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_NONBMP_IDENTIFIER,
-    yytext, 1);
-  return T_ERR;
+<INITIAL,QUOTED_IDENTIFIER>{U_NONBMP} {
+  return_err_for_this_rule(NONBMP_IDENTIFIER);
 }
 
  /* Section for functionality (happy path) rules */
@@ -276,31 +266,33 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
 
  /* Non-operator keywords */
 "("     keyword(LEFT);
-")"     pos_keyword(RIGHT);
+")"     keyword(RIGHT);
 ","     keyword(COMMA);
-";" keyword(SEMICOLON);
+";"     keyword(SEMICOLON);
 as      keyword(AS);
-avg     pos_keyword(AVG);
+avg     keyword(AVG);
 by      keyword(BY);
-count   pos_keyword(COUNT);
+count   keyword(COUNT);
 from    keyword(FROM);
 group   keyword(GROUP);
-max     pos_keyword(MAX);
-min     pos_keyword(MIN);
+max     keyword(MAX);
+min     keyword(MIN);
 null    keyword(NULL);
 select  keyword(SELECT);
-sum     pos_keyword(SUM);
+sum     keyword(SUM);
 where   keyword(WHERE);
 
 [ \t\r\n] ; // ignore whitespace
 
 [0-9]+\.[0-9]+ {
   yylval->fval = atof(yytext);
+  lloc_this_rule();
   return T_FLOAT;
 }
 
 [0-9]+ {
   yylval->ival = atoi(yytext);
+  lloc_this_rule();
   return T_INT;
 }
 
@@ -314,17 +306,14 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
   * keyword might not be valid as an unquoted identifier. For the sake of
   * backward compatibility, we'd like such identifiers to be invalid even before
   * the keyword is implemented. Note that MySQL differs between reserved and
-  * non-reserved keyword, where only reserved keywords are invalid as unquoted
+  * non-reserved keywords, where only reserved keywords are invalid as unquoted
   * identifiers. For the sake of simplicity, we make no such distinction for
   * RonDB REST SQL, and instead disallow the use of all keywords - both reserved
   * and not, both implemented and not - as unquoted identifiers.
   * todo: Decide whether to disallow unquoted identifiers altogether.
   * todo: This rule quadruples the size of RestSQLLexer.l.cpp. Is it better to hand-code keyword detection?
   */
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_UNIMPLEMENTED_KEYWORD,
-    yytext, yyleng);
-  return T_ERR;
+  return_err_for_this_rule(UNIMPLEMENTED_KEYWORD);
 }
 
 {UNQUOTED_IDENTIFIER_CHARACTER}+ {
@@ -340,33 +329,31 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
   * since the keywords are defined first, they take precedence.
   */
   yylval->str = LexString{yytext, size_t(yyleng)};
+  lloc_this_rule();
   return T_IDENTIFIER;
 }
 
 ` {
   BEGIN(QUOTED_IDENTIFIER);
   yylval->str = LexString{ NULL, 0};
-  context->m_compound_token_pos = yytext;
-  context->m_compound_token_len = 0;
+  yylloc->begin = yytext;
 }
 <QUOTED_IDENTIFIER>{QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK}+ {
-    yylval->str = yylval->str.concat(LexString{ yytext, size_t(yyleng) },
-                                     context->get_allocator());
+  yylval->str = yylval->str.concat(LexString{ yytext, size_t(yyleng) },
+                                   context->get_allocator());
 }
 <QUOTED_IDENTIFIER>`` {
-  yylval->str = yylval->str.concat(LexString{ yytext, 1 }, context->get_allocator());
+  yylval->str = yylval->str.concat(LexString{ yytext, 1 },
+                                   context->get_allocator());
 }
 <QUOTED_IDENTIFIER>` {
-  context->m_compound_token_len = yytext + 1 - context->m_compound_token_pos;
+  yylloc->end = yytext + yyleng;
   BEGIN(INITIAL);
   return T_IDENTIFIER;
 }
 <QUOTED_IDENTIFIER><<EOF>> {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER,
-    context->m_compound_token_pos,
-    yytext - context->m_compound_token_pos);
-  return T_ERR;
+  yylloc->end = yytext;
+  return_err(UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER);
 }
 
  /*
@@ -378,8 +365,7 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
 \047 {
   BEGIN(SINGLE_QUOTED_STRING);
   yylval->str = LexString{ NULL, 0};
-  context->m_compound_token_pos = yytext;
-  context->m_compound_token_len = 0;
+  yylloc->begin = yytext;
 }
 <SINGLE_QUOTED_STRING>{SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH}+ {
   yylval->str = yylval->str.concat(LexString{ yytext, size_t(yyleng) },
@@ -390,7 +376,7 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
                                    context->get_allocator());
 }
 <SINGLE_QUOTED_STRING>\047 {
-  context->m_compound_token_len = yytext + 1 - context->m_compound_token_pos;
+  yylloc->end = yytext + yyleng;
   BEGIN(INITIAL);
   return T_STRING;
 }
@@ -439,17 +425,11 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
   yylval->str = yylval->str.concat(result, context->get_allocator());
 }
 <SINGLE_QUOTED_STRING>\134 {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING,
-    yytext, 1);
-  return T_ERR;
+  return_err_for_this_rule(INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING);
 }
 <SINGLE_QUOTED_STRING><<EOF>> {
-  context->set_err_state(
-    RestSQLPreparer::ErrState::LEX_UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING,
-    context->m_compound_token_pos,
-    yytext - context->m_compound_token_pos);
-  return T_ERR;
+  yylloc->end = yytext;
+  return_err(UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING);
 }
 <SINGLE_QUOTED_STRING>\047[ \t\r\n]+\047 {
   // Quoted strings placed next to each other are concatenated to a single string.

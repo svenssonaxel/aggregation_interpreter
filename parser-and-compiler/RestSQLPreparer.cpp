@@ -401,8 +401,8 @@ RestSQLPreparer::print()
     }
     else
     {
-      auto col_name = outputs->col_name;
-      auto col_idx = column_name_to_idx(col_name);
+      LexString col_name = outputs->col_name;
+      int col_idx = column_name_to_idx(col_name);
       cout << "C" << col_idx << ":" <<
         m_agg->quoted_identifier(col_name) << endl;
     }

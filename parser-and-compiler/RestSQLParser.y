@@ -34,6 +34,8 @@
 %parse-param {yyscan_t scanner}
 %lex-param {yyscan_t scanner}
 %define api.prefix {rsqlp_}
+%locations
+%define api.location.type {LexLocation}
 
 /* This section will go into RestSQLParser.y.hpp, near the top. */
 %code requires
@@ -46,6 +48,20 @@ typedef void * yyscan_t;
 // Let bison use RestSQLPreparer's arena allocator
 #define YYMALLOC(SIZE) context->get_allocator()->alloc(SIZE)
 #define YYFREE(PTR) void()
+
+// Redefine default location propagation
+# define YYLLOC_DEFAULT(Cur, Rhs, N) \
+do \
+  if (N) \
+    { \
+      (Cur).begin = YYRHSLOC(Rhs, 1).begin; \
+      (Cur).end = YYRHSLOC(Rhs, N).end; \
+    } \
+  else \
+    { \
+      (Cur).begin = (Cur).end = YYRHSLOC(Rhs, 0).end; \
+    } \
+while (0)
 
 #define yycheck rsqlp_check
 #define yydefact rsqlp_defact
@@ -66,7 +82,7 @@ typedef void * yyscan_t;
 #include <stdlib.h>
 #include "RestSQLParser.y.hpp"
 #include "RestSQLLexer.l.hpp"
-extern void rsqlp_error(yyscan_t yyscanner, const char* s);
+extern void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t yyscanner, const char* s);
 #define context (rsqlp_get_extra(scanner))
 #define initptr(THIS) do \
   { \
@@ -74,17 +90,13 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
             context->get_allocator()->alloc( \
               sizeof(*(THIS)))); \
   } while (0)
-#define init_aggfun(RES,FUN,ARG,BEGIN,END) do \
+#define init_aggfun(RES,LOC,FUN,ARG) do \
   { \
     initptr(RES); \
     RES->is_agg = true; \
     RES->aggregate.fun = FUN; \
     RES->aggregate.arg = ARG; \
-    char* aggfun_begin = BEGIN; \
-    char* aggfun_end = END; \
-    assert(aggfun_begin < aggfun_end); \
-    size_t aggfun_len = aggfun_end - aggfun_begin; \
-    RES->output_name = LexString{aggfun_begin, aggfun_len}; \
+    RES->output_name = LexString{(LOC).begin, size_t((LOC).end - (LOC).begin)}; \
     RES->next = NULL; \
   } while (0)
 #define init_cond(RES,LEFT,OP,RIGHT) do \
@@ -102,10 +114,6 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
   int ival;
   float fval;
   LexString str;
-  struct {
-    int type;
-    char* begin;
-  } pos_keyword;
   struct lsl
   {
     LexString str;
@@ -119,8 +127,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 
 %token<ival> T_INT
 %token<fval> T_FLOAT
-%token T_LEFT
-%token<pos_keyword> T_COUNT T_MAX T_MIN T_SUM T_AVG T_RIGHT
+%token T_COUNT T_MAX T_MIN T_SUM T_AVG T_LEFT T_RIGHT
 %token T_SELECT T_FROM T_GROUP T_BY T_AS T_WHERE
 %token T_SEMICOLON
 %token T_OR T_XOR T_AND T_NOT T_EQUALS T_GE T_GT T_LE T_LT T_NOT_EQUALS T_IS T_NULL T_BITWISE_OR T_BITWISE_AND T_BITSHIFT_LEFT T_BITSHIFT_RIGHT T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_BITWISE_XOR T_EXCLAMATION T_INTERVAL
@@ -171,7 +178,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 %type<str> identifier
 %type<groupby_cols> groupby_opt groupby groupby_cols groupby_col
 %type<outputs> outputlist output aliased_output nonaliased_output
-%type<pos_keyword> aggfun
+%type<ival> aggfun
 %type<arith_expr> arith_expr
 %type<conditional_expression> where_opt cond_expr
 
@@ -207,28 +214,26 @@ nonaliased_output:
                                           $$->output_name = $$->col_name;
                                           $$->next = NULL;
                                         }
-| aggfun T_LEFT arith_expr T_RIGHT      { init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1); }
+| aggfun T_LEFT arith_expr T_RIGHT      { init_aggfun($$, @$, $1, $3); }
 | T_COUNT T_LEFT arith_expr T_RIGHT     {
                                           // This needs to be a separate rule from the "aggfun..."
                                           // rule above in order to avoid a shift/reduce conflict
                                           // with the COUNT(*) rule below.
-                                          init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
+                                          init_aggfun($$, @$, T_COUNT, $3);
                                         }
 | T_COUNT T_LEFT T_MULTIPLY T_RIGHT     {
                                           // COUNT(*) is implemented as COUNT(1).
-                                          init_aggfun($$,
-                                                      $1.type,
-                                                      context->get_agg()->ConstantInteger(1),
-                                                      $1.begin,
-                                                      $4.begin + 1);
+                                          init_aggfun($$, @$,
+                                                      T_COUNT,
+                                                      context->get_agg()->ConstantInteger(1));
                                         }
 
 /* T_COUNT not included here, in order to implement COUNT(*) */
 aggfun:
-  T_AVG                                 { $$ = $1; }
-| T_MAX                                 { $$ = $1; }
-| T_MIN                                 { $$ = $1; }
-| T_SUM                                 { $$ = $1; }
+  T_AVG                                 { $$ = T_AVG; }
+| T_MAX                                 { $$ = T_MAX; }
+| T_MIN                                 { $$ = T_MIN; }
+| T_SUM                                 { $$ = T_SUM; }
 
 arith_expr:
   identifier                            { $$ = context->get_agg()->Load($1); }
@@ -293,28 +298,41 @@ identifier                              { initptr($$); $$->col_name = $1; $$->ne
 
 %%
 
-void rsqlp_error(yyscan_t scanner, const char *s)
+void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t scanner, const char *s)
 {
-  /*
-   * Calculate position and length for the last token. We have two cases: For a
-   * token stemming from a single lexer rule, we use the values for the last
-   * matched lexer rule. For a token stemming from a combination of lexer rules,
-   * we have saved the necessary values in m_compound_token_pos and
-   * m_compound_token_len.
-   */
-  char* last_compound_token_pos = context->m_compound_token_pos;
-  uint last_compound_token_len = context->m_compound_token_len;
-  char* last_match_pos = rsqlp_get_text(scanner);
-  uint last_match_len = rsqlp_get_leng(scanner);
-  bool last_token_was_compound =
-    (last_compound_token_pos + last_compound_token_len) ==
-    (last_match_pos + last_match_len);
-  char* last_token_pos = last_token_was_compound ?
-    last_compound_token_pos : last_match_pos;
-  uint last_token_len = last_token_was_compound ?
-    last_compound_token_len : last_match_len;
-  context->set_err_state(
-    RestSQLPreparer::ErrState::PARSER_ERROR,
-    last_token_pos,
-    last_token_len);
+  // Get the location of the last lexer match. This is not the same as the last
+  // token, but lex_end should match with the end of the last token.
+  char* lex_begin = rsqlp_get_text(scanner);
+  uint lex_len = rsqlp_get_leng(scanner);
+  char* lex_end = lex_begin + lex_len;
+  // Get the location of the error as computed by bison. This is generally
+  // correct, but in the case of unexpected end of input, bison claims that the
+  // last token is problematic even though it's not.
+  char* loc_begin = yylloc->begin;
+  char* loc_end = yylloc->end;
+  uint loc_len = loc_end - loc_begin;
+  // If lexer has read no tokens after the error location, then use the error
+  // location provided by bison.
+  if(loc_end == lex_end)
+  {
+    context->set_err_state(
+      RestSQLPreparer::ErrState::PARSER_ERROR,
+      loc_begin,
+      loc_len);
+    return;
+  }
+  // If lexer has attempted to read something after the error location, then use
+  // the last lexer match as error location. This should only happen on
+  // unexpected end of input.
+  if(loc_end <= lex_begin)
+  {
+    assert(lex_len == 1);
+    context->set_err_state(
+      RestSQLPreparer::ErrState::PARSER_ERROR,
+      lex_begin,
+      lex_len);
+    return;
+  }
+  // Those two cases should be the only possibilities.
+  assert(false);
 }

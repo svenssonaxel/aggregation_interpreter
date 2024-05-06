@@ -38,6 +38,12 @@ typedef void* yyscan_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 struct yy_buffer_state;
 
+struct LexLocation
+{
+  char* begin = NULL;
+  char* end = NULL;
+};
+
 struct Outputs
 {
   bool is_agg;
@@ -119,7 +125,7 @@ public:
   private:
     RestSQLPreparer& m_parser;
     ErrState m_err_state = ErrState::NONE;
-    char* m_err_pos = NULL;
+    const char* m_err_pos = NULL;
     uint m_err_len = 0;
   public:
     Context(RestSQLPreparer& parser):
@@ -129,8 +135,6 @@ public:
     AggregationAPICompiler* get_agg();
     ArenaAllocator* get_allocator();
     SelectStatement ast_root;
-    char* m_compound_token_pos = NULL;
-    uint m_compound_token_len = 0;
   };
 private:
   enum class Status
