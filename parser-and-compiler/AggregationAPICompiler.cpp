@@ -298,7 +298,7 @@ AggregationAPICompiler::svm_execute(AggregationAPICompiler::Instr* instr,
   FORALL_AGGS(AGG_CASE)
   default:
     // Unknown instruction
-    abort();
+    assert(false);
   }
 }
 # undef OPERATOR_CASE
@@ -674,7 +674,7 @@ AggregationAPICompiler::pushInstr(AggType type,
     FORALL_AGGS(AGG_CASE)
     default:
       // Unknown aggregation type
-      abort();
+      assert(false);
   }
   pushInstr(instr, dest, src, is_first_compilation);
 }
@@ -694,7 +694,7 @@ AggregationAPICompiler::pushInstr(ExprOp op,
     FORALL_ARITHMETIC_OPS(OP_CASE)
     default:
       // Unknown operation
-      abort();
+      assert(false);
   }
   pushInstr(instr, dest, src, is_first_compilation);
 }
@@ -771,7 +771,7 @@ AggregationAPICompiler::dead_code_elimination()
     FORALL_AGGS(AGG_CASE)
     default:
       // Unknown instruction
-      abort();
+      assert(false);
     }
     if (this_instr_is_useful)
     {
@@ -841,7 +841,7 @@ AggregationAPICompiler::print_aggregate(int idx)
     FORALL_AGGS(AGG_CASE)
   default:
     // Unknown aggregation
-    abort();
+      assert(false);
   }
 }
 #undef AGG_CASE
@@ -957,7 +957,7 @@ AggregationAPICompiler::print(Instr* instr)
   FORALL_AGGS(AGG_CASE)
   default:
     // Unknown instruction
-    abort();
+    assert(false);
   }
   printf("\n");
 }

@@ -152,7 +152,7 @@ RestSQLPreparer::parse()
     }
     break;
   default:
-    abort();
+    assert(false);
   }
   if (print_statement)
   {
@@ -393,7 +393,7 @@ RestSQLPreparer::print()
         break;
       default:
         // Unknown aggregate function
-        abort();
+        assert(false);
       }
       cout << "A" << pr << ":";
       m_agg->print_aggregate(pr);
@@ -598,7 +598,6 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
       return;
     }
   default:
-    // todo rather than abort, assert false with message, maybe have to make new macro.
     // Unknown operator
     assert(false);
   }

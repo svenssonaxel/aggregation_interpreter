@@ -492,7 +492,7 @@ void*
 rsqlp_realloc(void * ptr, size_t bytes, void * scanner)
 {
   // If realloc is needed, we need to keep track of allocation size.
-  abort();
+  assert(false);
 }
 
 void
