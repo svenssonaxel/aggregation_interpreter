@@ -282,6 +282,31 @@ select  keyword(SELECT);
 sum     keyword(SUM);
 where   keyword(WHERE);
 
+ /* date-related keywords */
+date_add           keyword(DATE_ADD);
+date_sub           keyword(DATE_SUB);
+extract            keyword(EXTRACT);
+microsecond        keyword(MICROSECOND);
+second             keyword(SECOND);
+minute             keyword(MINUTE);
+hour               keyword(HOUR);
+day                keyword(DAY);
+week               keyword(WEEK);
+month              keyword(MONTH);
+quarter            keyword(QUARTER);
+year               keyword(YEAR);
+second_microsecond keyword(SECOND_MICROSECOND);
+minute_microsecond keyword(MINUTE_MICROSECOND);
+minute_second      keyword(MINUTE_SECOND);
+hour_microsecond   keyword(HOUR_MICROSECOND);
+hour_second        keyword(HOUR_SECOND);
+hour_minute        keyword(HOUR_MINUTE);
+day_microsecond    keyword(DAY_MICROSECOND);
+day_second         keyword(DAY_SECOND);
+day_minute         keyword(DAY_MINUTE);
+day_hour           keyword(DAY_HOUR);
+year_month         keyword(YEAR_MONTH);
+
 [ \t\r\n] ; // ignore whitespace
 
 [0-9]+\.[0-9]+ {

@@ -105,6 +105,7 @@ runtest "Error marker alignment after 2-byte UTF-8 characters" ./ParseCompileTes
 runtest "Error marker alignment after 3-byte UTF-8 character" ./ParseCompileTest $'select a\n      ,ᚱab ᚱab\nfrom tbl;'
 runtest "Incomplete escape sequence in single-quoted string" ./ParseCompileTest $"select a from tbl where 'word\\"
 runtest "Unexpected end of input inside single-quoted string" ./ParseCompileTest $"select a from tbl where 'word"
+runtest "date_add not supported in output" ./ParseCompileTest $'select date_add(col1, interval 1 day) from tbl;'
 
 # Test successes
 
@@ -178,3 +179,6 @@ runtest "Single quoted strings" ./ParseCompileTest "$(cat "$tmpfile")"
 runtest "Compound strings" ./ParseCompileTest "
 select col from tbl where 'hello'
   ' world';"
+runtest "date_add" ./ParseCompileTest $'select col from tbl where date_add(col1, interval 1 day) is not null;'
+runtest "date_sub" ./ParseCompileTest $'select col from tbl where date_add(\'2024-05-06\', interval 23 microsecond) > col2;'
+runtest "extract" ./ParseCompileTest $'select col from tbl where extract(year from \'2024-05-06\') <= col2;'

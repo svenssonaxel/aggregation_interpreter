@@ -332,6 +332,13 @@ Syntax error in SQL statement: Unexpected end of input inside single-quoted stri
 Failed to parse.
 => Exit code: 1
 
+===== date_add not supported in output =====
+Syntax error in SQL statement: Unexpected at this point
+> select date_add(col1, interval 1 day) from tbl;
+!        ^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
 ===== APICompileTest =====
 Compilation example 1:
 
@@ -928,6 +935,58 @@ SELECT
 FROM tbl
 WHERE
 STRING: hello<20>world
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== date_add =====
+SELECT
+  Out_0:`col`
+   = C0:`col`
+FROM tbl
+WHERE
+IS
++- DATE_ADD
+|  +- col1
+|  \- INTERVAL
+|     +- 1
+|     \- DAY
+\- NOT NULL
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== date_sub =====
+SELECT
+  Out_0:`col`
+   = C0:`col`
+FROM tbl
+WHERE
+>
++- DATE_ADD
+|  +- STRING: 2024-05-06
+|  \- INTERVAL
+|     +- 23
+|     \- MICROSECOND
+\- col2
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== extract =====
+SELECT
+  Out_0:`col`
+   = C0:`col`
+FROM tbl
+WHERE
+<=
++- EXTRACT
+|  +- YEAR
+|  \- STRING: 2024-05-06
+\- col2
 
 No aggregation program.
 

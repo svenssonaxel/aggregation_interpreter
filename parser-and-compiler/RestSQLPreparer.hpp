@@ -77,9 +77,21 @@ struct ConditionalExpression
       struct ConditionalExpression* arg;
       bool null;
     } is;
+    struct
+    {
+      struct ConditionalExpression* arg;
+      int interval_type;
+    } interval;
+    struct
+    {
+      int interval_type;
+      struct ConditionalExpression* arg;
+    } extract;
     LexString string;
   };
 };
+
+const char* interval_type_name(int interval_type);
 
 struct GroupbyColumns
 {

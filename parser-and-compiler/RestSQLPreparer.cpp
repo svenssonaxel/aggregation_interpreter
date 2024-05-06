@@ -557,9 +557,31 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
     prefix_op = true;
     break;
   case T_INTERVAL:
-    opstr = "INTERVAL";
-    // todo what?
+    {
+      cout << "INTERVAL" << endl <<
+        prefix << "+- ";
+      LexString prefix_arg = prefix.concat(LexString{"|  ", 3}, m_aalloc);
+      print(ce->interval.arg, prefix_arg);
+      cout << prefix << "\\- " <<
+        interval_type_name(ce->interval.interval_type) << endl;
+      return;
+    }
+  case T_DATE_ADD:
+    opstr = "DATE_ADD";
     break;
+  case T_DATE_SUB:
+    opstr = "DATE_SUB";
+    break;
+  case T_EXTRACT:
+    {
+      cout << "EXTRACT" << endl <<
+        prefix << "+- " <<
+        interval_type_name(ce->extract.interval_type) << endl <<
+        prefix << "\\- ";
+      LexString prefix_arg = prefix.concat(LexString{"   ", 3}, m_aalloc);
+      print(ce->extract.arg, prefix_arg);
+      return;
+    }
   default:
     // todo rather than abort, assert false with message, maybe have to make new macro.
     // Unknown operator
@@ -581,6 +603,34 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
     cout << prefix << "\\- ";
     LexString prefix_right = prefix.concat(LexString{"   ", 3}, m_aalloc);
     print(ce->args.right, prefix_right);
+  }
+}
+
+const char* interval_type_name(int interval_type)
+{
+  switch(interval_type)
+  {
+  case T_MICROSECOND: return "MICROSECOND";
+  case T_SECOND: return "SECOND";
+  case T_MINUTE: return "MINUTE";
+  case T_HOUR: return "HOUR";
+  case T_DAY: return "DAY";
+  case T_WEEK: return "WEEK";
+  case T_MONTH: return "MONTH";
+  case T_QUARTER: return "QUARTER";
+  case T_YEAR: return "YEAR";
+  case T_SECOND_MICROSECOND: return "SECOND_MICROSECOND";
+  case T_MINUTE_MICROSECOND: return "MINUTE_MICROSECOND";
+  case T_MINUTE_SECOND: return "MINUTE_SECOND";
+  case T_HOUR_MICROSECOND: return "HOUR_MICROSECOND";
+  case T_HOUR_SECOND: return "HOUR_SECOND";
+  case T_HOUR_MINUTE: return "HOUR_MINUTE";
+  case T_DAY_MICROSECOND: return "DAY_MICROSECOND";
+  case T_DAY_SECOND: return "DAY_SECOND";
+  case T_DAY_MINUTE: return "DAY_MINUTE";
+  case T_DAY_HOUR: return "DAY_HOUR";
+  case T_YEAR_MONTH: return "YEAR_MONTH";
+  default: assert(false);
   }
 }
 
