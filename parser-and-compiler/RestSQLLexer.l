@@ -394,7 +394,7 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
 }
 <QUOTED_IDENTIFIER><<EOF>> {
   yylloc->end = yytext;
-  return_err(UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER);
+  return_err(UNEXPECTED_EOI_IN_QUOTED_IDENTIFIER);
 }
 
  /*
@@ -470,7 +470,7 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
 }
 <SINGLE_QUOTED_STRING><<EOF>> {
   yylloc->end = yytext;
-  return_err(UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING);
+  return_err(UNEXPECTED_EOI_IN_SINGLE_QUOTED_STRING);
 }
 <SINGLE_QUOTED_STRING>\047[ \t\r\n]+\047 {
   // Quoted strings placed next to each other are concatenated to a single string.

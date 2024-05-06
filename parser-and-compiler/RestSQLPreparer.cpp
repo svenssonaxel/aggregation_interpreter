@@ -125,13 +125,13 @@ RestSQLPreparer::parse()
   case ErrState::LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING:
     msg = "Incomplete escape sequence in single-quoted string";
     break;
-  case ErrState::LEX_UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING:
+  case ErrState::LEX_UNEXPECTED_EOI_IN_SINGLE_QUOTED_STRING:
     msg = "Unexpected end of input inside single-quoted string";
     break;
   case ErrState::LEX_ILLEGAL_TOKEN:
     msg = "Illegal token";
     break;
-  case ErrState::LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER:
+  case ErrState::LEX_UNEXPECTED_EOI_IN_QUOTED_IDENTIFIER:
     msg = "Unexpected end of input inside quoted identifier";
     break;
   case ErrState::LEX_U_ENC_ERR:

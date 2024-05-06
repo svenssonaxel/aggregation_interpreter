@@ -71,6 +71,9 @@ runtest "Too high code point (U+123456)" ./ParseCompileTest $'select `a\xf4\xa3\
 runtest "Surrogate (U+dead)" ./ParseCompileTest $'select `a\xed\xba\xad` from tbl;'
 # U+ffff < U+204d7 = 𠓗 = 11110000 10100000 10010011 10010111 = f0 a0 93 97
 runtest "Non-BMP UTF-8 in identifier" ./ParseCompileTest $'select `a\xf0\xa0\x93\x97` from tbl;'
+runtest "Unimplemented keyword used as unquoted identifier" ./ParseCompileTest $'select zone from tbl;'
+runtest "Incomplete escape sequence in single-quoted string" ./ParseCompileTest $'select a from tbl where \x27hello\x5c'
+runtest "Unexpected EOI in single-quoted string" ./ParseCompileTest $'select a from tbl where \x27hello'
 runtest "Illegal token" ./ParseCompileTest 'select #a from tbl;'
 runtest "EOI inside quoted identifier" ./ParseCompileTest 'select `a'
 runtest "EOI inside escaped identifier" ./ParseCompileTest 'select `bc``de'
@@ -184,12 +187,13 @@ runtest "Compound strings" ./ParseCompileTest "
 select col from tbl where 'hello'
   ' world';"
 runtest "date_add" ./ParseCompileTest $'select col from tbl where date_add(col1, interval 1 day) is not null;'
-runtest "date_sub" ./ParseCompileTest $'select col from tbl where date_add(\'2024-05-06\', interval 23 microsecond) > col2;'
-runtest "extract" ./ParseCompileTest $'select col from tbl where extract(year from \'2024-05-06\') <= col2;'
+runtest "date_sub" ./ParseCompileTest $'select col from tbl where date_add(\x272024-05-06\x27, interval 23 microsecond) > col2;'
+runtest "extract" ./ParseCompileTest $'select col from tbl where extract(year from \x272024-05-06\x27) <= col2;'
 runtest "order by" ./ParseCompileTest $'select col1 from tbl order by col1;'
 runtest "order by 2 columns" ./ParseCompileTest $'select col1 from tbl order by col1, col2;'
 runtest "group and order by" ./ParseCompileTest $'select col1, `col #2`, max(col3) from tbl group by col1, `col #2` order by col1, `col #2`;'
 runtest "order by ASC/DESC" ./ParseCompileTest $'select col1 from tbl order by col1, col2 ASC, col3 DESC, col4;'
+runtest "Unimplemented keyword used as quoted identifier" ./ParseCompileTest $'select `zone` from tbl;'
 
 # Complex queries
 
