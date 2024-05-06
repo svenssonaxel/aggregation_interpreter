@@ -46,6 +46,7 @@ RestSQLPreparer::RestSQLPreparer(char* sql_buffer,
    * bytes are not scanned.
    * See https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_node/flex_12.html
    */
+  assert(sql_len >= 2);
   assert(sql_buffer[sql_len-1] == '\0');
   assert(sql_buffer[sql_len-2] == '\0');
   rsqlp_lex_init_extra(&m_context, &m_scanner);
