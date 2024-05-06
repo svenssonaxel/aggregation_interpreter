@@ -115,9 +115,9 @@ main(int argc, char** argv)
     printf("Failed to compile.\n");
     return 1;
   }
-  a.print_aggregates();
+  b.print_aggregates();
   printf("\n");
-  a.print_program();
+  b.print_program();
 
   return 0;
 }

@@ -394,73 +394,60 @@ Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
 Compilation example 2:
 
 Aggregations:
-A0=Max(`apples`)
-A1=Sum((`apples` + (`oranges` * `kiwis`)))
-A2=Min((`apples` - (`oranges` * `kiwis`)))
-A3=Sum((`apples` + (`oranges` * `kiwis`)))
-A4=Min((`apples` - (`oranges` * `kiwis`)))
-A5=Count((`apples` + `apples`))
-A6=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))))
-A7=Min((`apples` + (`apples` + (`apples` + `apples`))))
-A8=Max((((`apples` + `apples`) + `apples`) + `apples`))
-A9=Count((`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
-A10=Count((`apples` + (`apples` + `apples`)))
+A0=Sum((`c` + `c`))
+A1=Sum((`c` - `c`))
+A2=Sum(((`c` + `c`) + (`c` + `c`)))
+A3=Sum(((`c` + `c`) - (`c` + `c`)))
+A4=Sum(((`c` + `c`) + `c`))
+A5=Sum((`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`)))))))))))
+A6=Sum(((((((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`))
 
-Aggregation program (53 instructions):
+Aggregation program (44 instructions):
 Instr. DEST SRC DESCRIPTION
-Load   r00  C00 r00 = C00:`apples`
-Max    A00  r00 A00:MAX <- r00:`apples`
-Load   r01  C01 r01 = C01:`oranges`
-Load   r02  C02 r02 = C02:`kiwis`
-Mul    r01  r02 r01:`oranges` *= r02:`kiwis`
-Mov    r02  r00 r02 = r00:`apples`
-Add    r00  r01 r00:`apples` += r01:(`oranges` * `kiwis`)
-Sum    A01  r00 A01:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
-Mov    r03  r02 r03 = r02:`apples`
-Minus  r02  r01 r02:`apples` -= r01:(`oranges` * `kiwis`)
-Min    A02  r02 A02:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
-Sum    A03  r00 A03:SUM <- r00:(`apples` + (`oranges` * `kiwis`))
-Min    A04  r02 A04:MIN <- r02:(`apples` - (`oranges` * `kiwis`))
-Mov    r00  r03 r00 = r03:`apples`
-Add    r03  r03 r03:`apples` += r03:`apples`
-Count  A05  r03 A05:COUNT <- r03:(`apples` + `apples`)
-Mov    r01  r00 r01 = r00:`apples`
-Add    r00  r03 r00:`apples` += r03:(`apples` + `apples`)
-Mov    r02  r01 r02 = r01:`apples`
-Add    r01  r00 r01:`apples` += r00:(`apples` + (`apples` + `apples`))
-Mov    r04  r02 r04 = r02:`apples`
-Add    r02  r01 r02:`apples` += r01:(`apples` + (`apples` + (`apples` + `apples`)))
-Mov    r05  r04 r05 = r04:`apples`
-Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + `apples`))))
-Mov    r02  r05 r02 = r05:`apples`
-Add    r05  r04 r05:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))
-Mov    r04  r02 r04 = r02:`apples`
-Add    r02  r05 r02:`apples` += r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
-Mov    r06  r04 r06 = r04:`apples`
-Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))
-Mov    r02  r06 r02 = r06:`apples`
-Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))
-Mov    r04  r02 r04 = r02:`apples`
-Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))
-Mov    r06  r04 r06 = r04:`apples`
-Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))
-Mov    r02  r06 r02 = r06:`apples`
-Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))
-Mov    r04  r02 r04 = r02:`apples`
-Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))
-Mov    r06  r04 r06 = r04:`apples`
-Add    r04  r02 r04:`apples` += r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))
-Mov    r02  r06 r02 = r06:`apples`
-Add    r06  r04 r06:`apples` += r04:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))
-Mov    r04  r02 r04 = r02:`apples`
-Add    r02  r06 r02:`apples` += r06:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`)))))))))))))))
-Count  A06  r02 A06:COUNT <- r02:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))))))))))))
-Min    A07  r01 A07:MIN <- r01:(`apples` + (`apples` + (`apples` + `apples`)))
-Add    r03  r04 r03:(`apples` + `apples`) += r04:`apples`
-Add    r03  r04 r03:((`apples` + `apples`) + `apples`) += r04:`apples`
-Max    A08  r03 A08:MAX <- r03:(((`apples` + `apples`) + `apples`) + `apples`)
-Count  A09  r05 A09:COUNT <- r05:(`apples` + (`apples` + (`apples` + (`apples` + (`apples` + (`apples` + `apples`))))))
-Count  A10  r00 A10:COUNT <- r00:(`apples` + (`apples` + `apples`))
+Load   r00  C00 r00 = C00:`c`
+Mov    r01  r00 r01 = r00:`c`
+Add    r00  r00 r00:`c` += r00:`c`
+Sum    A00  r00 A00:SUM <- r00:(`c` + `c`)
+Mov    r02  r01 r02 = r01:`c`
+Minus  r01  r01 r01:`c` -= r01:`c`
+Sum    A01  r01 A01:SUM <- r01:(`c` - `c`)
+Mov    r01  r00 r01 = r00:(`c` + `c`)
+Add    r00  r00 r00:(`c` + `c`) += r00:(`c` + `c`)
+Sum    A02  r00 A02:SUM <- r00:((`c` + `c`) + (`c` + `c`))
+Mov    r00  r01 r00 = r01:(`c` + `c`)
+Minus  r01  r01 r01:(`c` + `c`) -= r01:(`c` + `c`)
+Sum    A03  r01 A03:SUM <- r01:((`c` + `c`) - (`c` + `c`))
+Mov    r01  r00 r01 = r00:(`c` + `c`)
+Add    r00  r02 r00:(`c` + `c`) += r02:`c`
+Sum    A04  r00 A04:SUM <- r00:((`c` + `c`) + `c`)
+Mov    r03  r02 r03 = r02:`c`
+Add    r02  r01 r02:`c` += r01:(`c` + `c`)
+Mov    r01  r03 r01 = r03:`c`
+Add    r03  r02 r03:`c` += r02:(`c` + (`c` + `c`))
+Mov    r02  r01 r02 = r01:`c`
+Add    r01  r03 r01:`c` += r03:(`c` + (`c` + (`c` + `c`)))
+Mov    r03  r02 r03 = r02:`c`
+Add    r02  r01 r02:`c` += r01:(`c` + (`c` + (`c` + (`c` + `c`))))
+Mov    r01  r03 r01 = r03:`c`
+Add    r03  r02 r03:`c` += r02:(`c` + (`c` + (`c` + (`c` + (`c` + `c`)))))
+Mov    r02  r01 r02 = r01:`c`
+Add    r01  r03 r01:`c` += r03:(`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`))))))
+Mov    r03  r02 r03 = r02:`c`
+Add    r02  r01 r02:`c` += r01:(`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`)))))))
+Mov    r01  r03 r01 = r03:`c`
+Add    r03  r02 r03:`c` += r02:(`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`))))))))
+Mov    r02  r01 r02 = r01:`c`
+Add    r01  r03 r01:`c` += r03:(`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`)))))))))
+Sum    A05  r01 A05:SUM <- r01:(`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + (`c` + `c`))))))))))
+Add    r00  r02 r00:((`c` + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:(((`c` + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:((((`c` + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:(((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:(((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:((((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Add    r00  r02 r00:(((((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) += r02:`c`
+Sum    A06  r00 A06:SUM <- r00:((((((((((`c` + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`) + `c`)
 
 => Exit code: 0
 
