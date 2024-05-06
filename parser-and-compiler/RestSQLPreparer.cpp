@@ -370,7 +370,7 @@ RestSQLPreparer::print()
     if (outputs->is_agg)
     {
       int pr;
-      switch(outputs->aggregate.fun)
+      switch (outputs->aggregate.fun)
       {
       case T_AVG:
         cout << "CLIENT-SIDE CALCULATION: ";
@@ -461,7 +461,7 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
 {
   const char* opstr = NULL;
   bool prefix_op = false;
-  switch(ce->op)
+  switch (ce->op)
   {
   case T_IDENTIFIER:
     cout << ce->identifier << endl;
@@ -469,7 +469,7 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
   case T_STRING:
     {
       cout << "STRING: ";
-      for(uint i = 0; i < ce->string.len; i++)
+      for (uint i = 0; i < ce->string.len; i++)
       {
         char c = ce->string.str[i];
         if ( 0x21 <= c && c <= 0x7E && c != '<' && c != '>')
@@ -623,7 +623,7 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
 
 const char* interval_type_name(int interval_type)
 {
-  switch(interval_type)
+  switch (interval_type)
   {
   case T_MICROSECOND: return "MICROSECOND";
   case T_SECOND: return "SECOND";

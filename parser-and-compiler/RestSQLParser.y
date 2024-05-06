@@ -358,7 +358,7 @@ void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t scanner, const char *s)
   uint loc_len = loc_end - loc_begin;
   // If lexer has read no tokens after the error location, then use the error
   // location provided by bison.
-  if(loc_end == lex_end)
+  if (loc_end == lex_end)
   {
     context->set_err_state(
       RestSQLPreparer::ErrState::PARSER_ERROR,
@@ -369,7 +369,7 @@ void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t scanner, const char *s)
   // If lexer has attempted to read something after the error location, then use
   // the last lexer match as error location. This should only happen on
   // unexpected end of input.
-  if(loc_end <= lex_begin)
+  if (loc_end <= lex_begin)
   {
     assert(lex_len == 1);
     context->set_err_state(

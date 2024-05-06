@@ -49,7 +49,7 @@ main(int argc, char** argv)
   AggregationAPICompiler a(
     [col_names_a](LexString ls) -> int
     {
-      for (int i=0; i<3; i++)
+      for (int i = 0; i < 3; i++)
       {
         if (ls == col_names_a[i])
         {

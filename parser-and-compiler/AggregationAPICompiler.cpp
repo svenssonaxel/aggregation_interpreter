@@ -199,9 +199,9 @@ AggregationAPICompiler::Load(const char* col_name)
 AggregationAPICompiler::Expr*
 AggregationAPICompiler::ConstantInteger(long int long_int)
 {
-  for(uint idx = 0; idx < m_constants.size(); idx++)
+  for (uint idx = 0; idx < m_constants.size(); idx++)
   {
-    if(m_constants[idx].long_int == long_int)
+    if (m_constants[idx].long_int == long_int)
     {
       return new_expr(ExprOp::LoadConstantInt, 0, 0, idx);
     }
