@@ -53,7 +53,7 @@ RestSQLPreparer::RestSQLPreparer(char* sql_buffer,
   // The non-const sql_buffer is only used to initialize the flex scanner. The
   // flex scanner shouldn't modify it either, but only because we have removed
   // the buffer-modifying code from the generated output (see Makefile rule
-  // RestSQLLexer.l.cpp: RestSQLLexer.l.with-yy_hold_char.cpp). For this reason,
+  // RestSQLLexer.l.cpp: RestSQLLexer.l.with-hold_char.cpp). For this reason,
   // the lexer still declares the buffer as non-const.
   m_buf = rsqlp__scan_buffer(sql_buffer, sql_len, m_scanner);
   // We don't want the NUL bytes that flex requires.

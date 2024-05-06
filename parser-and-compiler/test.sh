@@ -49,6 +49,10 @@ explainNUL()
 tmpfile=$(mktemp)
 trap 'rm -f $tmpfile' EXIT
 
+# Unit tests
+
+runtest "Keywords unit test" ./KeywordsUnitTest
+
 # Test errors
 
 runtest "Null byte at beginning" explainNUL ./ParseCompileTest 'select a from tbl;' 0

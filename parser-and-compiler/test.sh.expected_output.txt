@@ -1,4 +1,8 @@
 
+===== Keywords unit test =====
+OK
+=> Exit code: 0
+
 ===== Null byte at beginning =====
 Syntax error in SQL statement: Unexpected null byte.
 > Nelect a from tbl;

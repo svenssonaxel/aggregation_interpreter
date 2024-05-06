@@ -1,13 +1,14 @@
 APICompileTest
 AggregationAPICompiler.o
 ArenaAllocator.o
+KeywordsUnitTest
 LexString.o
 ParseCompileTest
 RestSQLLexer.l.cpp
 RestSQLLexer.l.err
 RestSQLLexer.l.hpp
 RestSQLLexer.l.o
-RestSQLLexer.l.with-yy_hold_char.cpp
+RestSQLLexer.l.with-hold_char.cpp
 RestSQLParser.y.cpp
 RestSQLParser.y.hpp
 RestSQLParser.y.o
