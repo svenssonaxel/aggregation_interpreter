@@ -135,3 +135,14 @@ select col1
       ,col3 as last
 from table
 group by col1, col3;'
+runtest "Count all" ./ParseCompileTest $'
+select col1
+      ,sum(col2)
+      ,count(*)
+      ,max(col2)
+      ,count(col2)
+      ,count(*) as count_all
+      ,min(col2)
+      ,col3 as last
+from table
+group by col1, col3;'

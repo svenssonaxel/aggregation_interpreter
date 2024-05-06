@@ -74,6 +74,19 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
             context->get_allocator()->alloc( \
               sizeof(*(THIS)))); \
   } while (0)
+#define init_aggfun(RES,FUN,ARG,BEGIN,END) do \
+  { \
+    initptr(RES); \
+    RES->is_agg = true; \
+    RES->aggregate.fun = FUN; \
+    RES->aggregate.arg = ARG; \
+    char* aggfun_begin = BEGIN; \
+    char* aggfun_end = END; \
+    assert(aggfun_begin < aggfun_end); \
+    size_t aggfun_len = aggfun_end - aggfun_begin; \
+    RES->output_name = LexString{aggfun_begin, aggfun_len}; \
+    RES->next = NULL; \
+  } while (0)
 }
 
 /* This defines the datatype for an AST node. This includes lexer tokens. */
@@ -157,23 +170,27 @@ nonaliased_output: identifier
                    }
                  | aggfun T_LEFT arith_expr T_RIGHT
                    {
-                     initptr($$);
-                     $$->is_agg = true;
-                     $$->aggregate.fun = $1.type;
-                     $$->aggregate.arg = $3;
-                     char* aggfun_begin = $1.begin;
-                     char* aggfun_end = $4.begin + 1;
-                     assert(aggfun_begin < aggfun_end);
-                     size_t aggfun_len = aggfun_end - aggfun_begin;
-                     $$->output_name = LexString{aggfun_begin, aggfun_len};
-                     $$->next = NULL;
+                     init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
+                   }
+                 | T_COUNT T_LEFT arith_expr T_RIGHT
+                   {
+                     // This needs to be a separate rule from the "aggfun..."
+                     // rule above in order to avoid a shift/reduce conflict
+                     // with the COUNT(*) rule below.
+                     init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
+                   }
+                 | T_COUNT T_LEFT T_MULTIPLY T_RIGHT
+                   {
+                     // COUNT(*) is implemented as COUNT(1).
+                     init_aggfun($$,
+                                 $1.type,
+                                 context->get_agg()->ConstantInteger(1),
+                                 $1.begin,
+                                 $4.begin + 1);
                    }
 
+/* T_COUNT not included here, in order to implement COUNT(*) */
 aggfun: T_AVG
-        {
-          $$ = $1;
-        }
-      | T_COUNT
         {
           $$ = $1;
         }
@@ -228,7 +245,8 @@ identifier: T_IDENTIFIER
               $$ = $1;
             }
 
-groupby_opt: {
+groupby_opt: %empty
+             {
                $$ = NULL;
              }
            | groupby

@@ -31,7 +31,7 @@ RestSQLParser.y.cpp RestSQLParser.y.hpp: \
  RestSQLParser.y \
  RestSQLPreparer.hpp \
 
-	bison RestSQLParser.y
+	bison -Wall -Wcounterexamples -Wdangling-alias -Werror RestSQLParser.y
 
 RestSQLLexer.l.with-yy_hold_char.cpp RestSQLLexer.l.hpp: \
  DynamicArray.hpp \
