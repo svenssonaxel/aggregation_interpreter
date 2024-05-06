@@ -137,21 +137,37 @@ AggregationAPICompiler::new_expr(ExprOp op,
   return &m_exprs.last_item();
 }
 
-void
+int
 AggregationAPICompiler::new_agg(AggregationAPICompiler::AggType agg_type,
                                 AggregationAPICompiler::Expr* expr)
 {
   if (m_status == Status::FAILED)
   {
-    return;
+    return -1;
   }
   assert(m_exprs.has_item(expr));
+  assert(m_status == Status::PROGRAMMING ||
+         m_status == Status::COMPILING ||
+          m_status == Status::COMPILED);
   AggExpr agg;
   agg.agg_type = agg_type;
   agg.expr = expr;
+  // Deduplication
+  for (uint i=0; i<m_aggs.size(); i++)
+  {
+    AggExpr* other = &m_aggs[i];
+    if (agg.agg_type == other->agg_type &&
+        agg.expr == other->expr)
+    {
+      return i;
+    }
+  }
+  // Since new aggregates are only to be created during programming, the above
+  // deduplication should always succeed during compilation.
+  assert_status(PROGRAMMING);
   expr->usage++;
   m_aggs.push(agg);
-  return;
+  return m_aggs.size() - 1;
 }
 
 AggregationAPICompiler::Expr*
@@ -207,16 +223,15 @@ AggregationAPICompiler::public_arithmetic_expression_helper(ExprOp op,
   return new_expr(op, x, y, 0);
 }
 
-void
+int
 AggregationAPICompiler::public_aggregate_function_helper(AggType agg_type,
                                                          Expr* x)
 {
   if (m_status == Status::FAILED)
   {
-    return;
+    return -1;
   }
-  assert_status(PROGRAMMING);
-  new_agg(agg_type, x);
+  return new_agg(agg_type, x);
 }
 
 /*
@@ -813,11 +828,11 @@ AggregationAPICompiler::print_aggregates()
 }
 
 #define AGG_CASE(Name) \
-      case AggType::Name: \
-        printf(#Name "("); \
-        print(m_aggs[idx].expr); \
-        printf(")"); \
-        break;
+  case AggType::Name: \
+    printf(#Name "("); \
+    print(m_aggs[idx].expr); \
+    printf(")"); \
+    break;
 void
 AggregationAPICompiler::print_aggregate(int idx)
 {

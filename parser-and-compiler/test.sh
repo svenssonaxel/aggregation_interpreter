@@ -125,3 +125,13 @@ select col1
       ,sum(col2+543)
       ,max(col3-792) as subtraction
 from table;'
+runtest "Avg" ./ParseCompileTest $'
+select col1
+      ,sum(col2)
+      ,max(col2)
+      ,avg(col2)
+      ,min(col2)
+      ,count(col2)
+      ,col3 as last
+from table
+group by col1, col3;'

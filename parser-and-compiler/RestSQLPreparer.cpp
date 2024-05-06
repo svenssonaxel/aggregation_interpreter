@@ -278,6 +278,10 @@ RestSQLPreparer::load()
       AggregationAPICompiler::Expr* expr = outputs->aggregate.arg;
       switch (fun)
       {
+      case T_AVG:
+        m_agg->Sum(expr);
+        m_agg->Count(expr);
+        break;
       case T_COUNT:
         m_agg->Count(expr);
         break;
@@ -348,8 +352,6 @@ RestSQLPreparer::print()
   cout << "SELECT\n";
   Outputs* outputs = ast_root.outputs;
   int out_count = 0;
-  int col_count = 0;
-  int agg_count = 0;
   while (outputs != NULL)
   {
     cout << "  Out_" << out_count << ":" <<
@@ -357,10 +359,36 @@ RestSQLPreparer::print()
       "   = ";
     if (outputs->is_agg)
     {
-      cout << "A" << agg_count << ":";
-      m_agg->print_aggregate(agg_count);
+      int pr;
+      switch(outputs->aggregate.fun)
+      {
+      case T_AVG:
+        cout << "CLIENT-SIDE CALCULATION: ";
+        pr = m_agg->Sum(outputs->aggregate.arg);
+        cout << "A" << pr << ":";
+        m_agg->print_aggregate(pr);
+        cout << " / ";
+        pr = m_agg->Count(outputs->aggregate.arg);
+        break;
+      case T_COUNT:
+        pr = m_agg->Count(outputs->aggregate.arg);
+        break;
+      case T_MAX:
+        pr = m_agg->Max(outputs->aggregate.arg);
+        break;
+      case T_MIN:
+        pr = m_agg->Min(outputs->aggregate.arg);
+        break;
+      case T_SUM:
+        pr = m_agg->Sum(outputs->aggregate.arg);
+        break;
+      default:
+        // Unknown aggregate function
+        abort();
+      }
+      cout << "A" << pr << ":";
+      m_agg->print_aggregate(pr);
       cout << endl;
-      agg_count++;
     }
     else
     {
@@ -368,7 +396,6 @@ RestSQLPreparer::print()
       auto col_idx = column_name_to_idx(col_name);
       cout << "C" << col_idx << ":" <<
         m_agg->quoted_identifier(col_name) << endl;
-      col_count++;
     }
     out_count++;
     outputs = outputs->next;

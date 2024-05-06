@@ -99,7 +99,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 %token<ival> T_INT
 %token<fval> T_FLOAT
 %token T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_LEFT
-%token<pos_keyword> T_COUNT T_MAX T_MIN T_SUM T_RIGHT
+%token<pos_keyword> T_COUNT T_MAX T_MIN T_SUM T_AVG T_RIGHT
 %token T_SELECT T_FROM T_GROUP T_BY T_AS
 %token T_SEMICOLON
 
@@ -169,7 +169,11 @@ nonaliased_output: identifier
                      $$->next = NULL;
                    }
 
-aggfun: T_COUNT
+aggfun: T_AVG
+        {
+          $$ = $1;
+        }
+      | T_COUNT
         {
           $$ = $1;
         }

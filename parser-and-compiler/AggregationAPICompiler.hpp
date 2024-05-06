@@ -125,7 +125,7 @@ private:
     Expr* expr = NULL;
   };
   DynamicArray<AggExpr> m_aggs;
-  void new_agg(AggType agg_type, Expr* expr);
+  int new_agg(AggType agg_type, Expr* expr);
   DynamicArray<Constant> m_constants;
 public:
   // Load operations
@@ -167,9 +167,9 @@ public:
 #undef DEFINE_ARITH_FUNC
   // Aggregation operations
 #define DEFINE_AGG_FUNC(OP, OP_ARG, EXPR_ARG) \
-  void OP(OP_ARG) \
+  int OP(OP_ARG) \
   { \
-    public_aggregate_function_helper(AggType::OP, EXPR_ARG); \
+    return public_aggregate_function_helper(AggType::OP, EXPR_ARG); \
   }
 #define DEFINE_AGG_FUNCS(OP) \
   DEFINE_AGG_FUNC(OP, Expr*       expr,     expr) \
@@ -180,7 +180,7 @@ public:
 #undef DEFINE_AGG_FUNC
 private:
   Expr* public_arithmetic_expression_helper(ExprOp op, Expr* x, Expr* y);
-  void public_aggregate_function_helper(AggType agg_type, Expr* x);
+  int public_aggregate_function_helper(AggType agg_type, Expr* x);
 
   // Symbolic Virtual Machine:
 private:

@@ -257,6 +257,7 @@ QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK                            [^\0`\200
 ";" keyword(SEMICOLON);
 
 as      keyword(AS);
+avg     pos_keyword(AVG);
 by      keyword(BY);
 count   pos_keyword(COUNT);
 from    keyword(FROM);
