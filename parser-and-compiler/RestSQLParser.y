@@ -190,6 +190,10 @@ arith_expr: identifier
             {
               $$ = context->get_agg()->Load($1);
             }
+          | T_INT
+            {
+                $$ = context->get_agg()->ConstantInteger($1);
+            }
           | T_LEFT arith_expr T_RIGHT
             {
               $$ = $2;

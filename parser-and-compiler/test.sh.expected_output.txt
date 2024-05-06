@@ -671,3 +671,26 @@ Add    r01  r00 r01:`h` += r00:(`i` / `j``j`)
 Count  A00  r01 A00:COUNT <- r01:(`h` + (`i` / `j``j`))
 
 => Exit code: 0
+
+===== Integer constants =====
+SELECT
+  Out_0:`col1`
+   = C2:`col1`
+  Out_1:`sum(col2+543)`
+   = A0:Sum((`col2` + 543))
+  Out_2:`subtraction`
+   = A1:Max((`col3` - 792))
+FROM table
+
+Aggregation program (8 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`col2`
+LoadI  r01  I00 r01 = I00:543
+Add    r00  r01 r00:`col2` += r01:543
+Sum    A00  r00 A00:SUM <- r00:(`col2` + 543)
+Load   r00  C01 r00 = C01:`col3`
+LoadI  r01  I01 r01 = I01:792
+Minus  r00  r01 r00:`col3` -= r01:792
+Max    A01  r00 A01:MAX <- r00:(`col3` - 792)
+
+=> Exit code: 0

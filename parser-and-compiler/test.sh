@@ -120,3 +120,8 @@ select count(a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a+a)
       ,min((ee+f)/(g-h))
 from table;'
 runtest "Alias" ./ParseCompileTest $'select a, b as c, `d` as `e``e`, `f``f` as g, count(h+i/`j``j`) as k from table;'
+runtest "Integer constants" ./ParseCompileTest $'
+select col1
+      ,sum(col2+543)
+      ,max(col3-792) as subtraction
+from table;'

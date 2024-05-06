@@ -49,6 +49,7 @@ using std::string;
   X(Count)
 #define FORALL_INSTRUCTIONS(X) \
   X(Load) \
+  X(LoadConstantInteger) \
   X(Mov) \
   FORALL_ARITHMETIC_OPS(X) \
   FORALL_AGGS(X)
@@ -77,6 +78,7 @@ public:
   enum class ExprOp
   {
     Load,
+    LoadConstantInt,
     FORALL_ARITHMETIC_OPS(ARITHMETIC_ENUM)
   };
 #undef ARITHMETIC_ENUM
@@ -87,7 +89,8 @@ public:
     ExprOp op; // Binary operation or Load
     Expr* left = NULL; // Left argument to binary operation
     Expr* right = NULL; // Right argument to binary operation
-    uint colidx = 0; // Column number for load operation
+    uint idx = 0; // Column number for load operation, or index in constant list
+                  // for loadconstant operations
     int usage = 0; // Reference count from Expr and AggExpr.
                    // Only used for asserts.
     uint est_regs = 0; // Estimated number of registers necessary to calculate
@@ -101,11 +104,15 @@ public:
                            // re-calculation. Only used for asserts.
     bool has_been_compiled = false; // Only used to determine program_usage.
   };
+  union Constant
+  {
+    long int long_int;
+  };
 private:
   std::function<int(LexString)> m_column_name_to_idx = NULL;
   std::function<LexString(int)> m_column_idx_to_name = NULL;
   DynamicArray<Expr> m_exprs;
-  Expr* new_expr(ExprOp op, Expr* left, Expr* right, uint colidx);
+  Expr* new_expr(ExprOp op, Expr* left, Expr* right, uint idx);
 #define AGG_ENUM(Name) Name,
   enum class AggType
   {
@@ -119,10 +126,12 @@ private:
   };
   DynamicArray<AggExpr> m_aggs;
   void new_agg(AggType agg_type, Expr* expr);
+  DynamicArray<Constant> m_constants;
 public:
-  // Load operation
+  // Load operations
   Expr* Load(LexString col_name);
   Expr* Load(const char* col_name);
+  Expr* ConstantInteger(long int long_int);
   // Arithmetic and aggregation operations could easily have been defined using
   // templates, but we prefer doing it without templates and with better
   // argument names.

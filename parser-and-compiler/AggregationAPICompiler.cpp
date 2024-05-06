@@ -39,6 +39,7 @@ AggregationAPICompiler::AggregationAPICompiler
   m_aalloc(aalloc),
   m_exprs(aalloc),
   m_aggs(aalloc),
+  m_constants(aalloc),
   m_program(aalloc)
 {}
 
@@ -61,7 +62,7 @@ AggregationAPICompiler::Expr*
 AggregationAPICompiler::new_expr(ExprOp op,
                                  Expr* left,
                                  Expr* right,
-                                 uint colidx)
+                                 uint idx)
 {
   if (m_status == Status::FAILED)
   {
@@ -76,8 +77,9 @@ AggregationAPICompiler::new_expr(ExprOp op,
   e.op = op;
   e.left = left;
   e.right = right;
-  e.colidx = colidx;
-  if (op == ExprOp::Load)
+  e.idx = idx;
+  if (op == ExprOp::Load ||
+      op == ExprOp::LoadConstantInt)
   {
     assert(left == NULL);
     assert(right == NULL);
@@ -87,7 +89,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
   {
     assert(left != NULL);
     assert(right != NULL);
-    assert(colidx == 0);
+    assert(idx == 0);
     // Estimate the numbers of registers necessary to calculate the
     // expression, and use that to determine the order of evaluation.
     // We cannot afford to calculate the exact number of registers needed
@@ -115,7 +117,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
     if (e.op == other->op &&
        e.left == other->left &&
        e.right == other->right &&
-       e.colidx == other->colidx)
+       e.idx == other->idx)
     {
       return other;
     }
@@ -176,6 +178,20 @@ AggregationAPICompiler::Load(const char* col_name)
   memcpy(mem, col_name, strlen(col_name));
   LexString ls = {(char*)mem, (size_t)strlen(col_name)};
   return Load(ls);
+}
+
+AggregationAPICompiler::Expr*
+AggregationAPICompiler::ConstantInteger(long int long_int)
+{
+  for(uint idx = 0; idx < m_constants.size(); idx++)
+  {
+    if(m_constants[idx].long_int == long_int)
+    {
+      return new_expr(ExprOp::LoadConstantInt, 0, 0, idx);
+    }
+  }
+  m_constants.push({long_int});
+  return new_expr(ExprOp::LoadConstantInt, 0, 0, m_constants.size() - 1);
 }
 
 AggregationAPICompiler::Expr*
@@ -254,6 +270,10 @@ AggregationAPICompiler::svm_execute(AggregationAPICompiler::Instr* instr,
   case SVMInstrType::Load:
     assert_reg(dest);
     r[dest]=new_expr(ExprOp::Load, NULL, NULL, src);
+    break;
+  case SVMInstrType::LoadConstantInteger:
+    assert_reg(dest);
+    r[dest]=new_expr(ExprOp::LoadConstantInt, NULL, NULL, src);
     break;
   case SVMInstrType::Mov:
     assert_reg(dest); assert_reg(src);
@@ -384,7 +404,7 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
   }
   bool is_first_compilation = !expr->has_been_compiled;
   expr->has_been_compiled = true;
-  // Load operation is straight-forward since it only has one register
+  // Load operations are straight-forward since they only have one register
   // argument.
   if (expr->op == ExprOp::Load)
   {
@@ -393,7 +413,17 @@ AggregationAPICompiler::compile(Expr* expr, uint* reg)
       return false;
     }
     assert_reg(*reg);
-    pushInstr(SVMInstrType::Load, *reg, expr->colidx, is_first_compilation);
+    pushInstr(SVMInstrType::Load, *reg, expr->idx, is_first_compilation);
+    return true;
+  }
+  if (expr->op == ExprOp::LoadConstantInt)
+  {
+    if (!seize_register(reg, UINT_MAX))
+    {
+      return false;
+    }
+    assert_reg(*reg);
+    pushInstr(SVMInstrType::LoadConstantInteger, *reg, expr->idx, is_first_compilation);
     return true;
   }
   // The rest of the logic is about arithmetic operations and optimization.
@@ -705,6 +735,7 @@ AggregationAPICompiler::dead_code_elimination()
     switch (type)
     {
     case SVMInstrType::Load:
+    case SVMInstrType::LoadConstantInteger:
       assert_reg(dest);
       this_instr_is_useful = reg_needed[dest];
       if (this_instr_is_useful)
@@ -830,7 +861,12 @@ AggregationAPICompiler::print(Expr* expr)
   }
   if (expr->op == AggregationAPICompiler::ExprOp::Load)
   {
-    cout << quoted_identifier(m_column_idx_to_name(expr->colidx));
+    cout << quoted_identifier(m_column_idx_to_name(expr->idx));
+    return;
+  }
+  if (expr->op == AggregationAPICompiler::ExprOp::LoadConstantInt)
+  {
+    printf("%ld", m_constants[expr->idx].long_int);
     return;
   }
   printf("(");
@@ -889,6 +925,12 @@ AggregationAPICompiler::print(Instr* instr)
     printf("Load   r%02d  C%02d r%02d = C%02d:",
            dest, src, dest, src);
     cout << quoted_identifier(m_column_idx_to_name(src));
+    break;
+  case SVMInstrType::LoadConstantInteger:
+    assert_reg(dest);
+    printf("LoadI  r%02d  I%02d r%02d = I%02d:",
+           dest, src, dest, src);
+    cout << m_constants[src].long_int;
     break;
   case SVMInstrType::Mov:
     assert_reg(dest); assert_reg(src);
