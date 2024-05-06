@@ -54,6 +54,26 @@ struct Outputs
   struct Outputs* next;
 };
 
+struct ConditionalExpression
+{
+  int op;
+  union
+  {
+    struct
+    {
+      struct ConditionalExpression* left;
+      struct ConditionalExpression* right;
+    } args;
+    LexString identifier;
+    long int constant_integer;
+    struct
+    {
+      struct ConditionalExpression* arg;
+      bool null;
+    } is;
+  };
+};
+
 struct GroupbyColumns
 {
   LexString col_name;
@@ -64,6 +84,7 @@ struct SelectStatement
 {
   Outputs* outputs = NULL;
   LexString table = {NULL, 0};
+  struct ConditionalExpression* where_expression = NULL;
   struct GroupbyColumns* groupby_columns = NULL;
 };
 
@@ -137,6 +158,7 @@ public:
   bool load();
   bool compile();
   bool print();
+  void print(struct ConditionalExpression* ce, LexString prefix);
   ~RestSQLPreparer();
 };
 

@@ -401,6 +401,12 @@ RestSQLPreparer::print()
     outputs = outputs->next;
   }
   cout << "FROM " << ast_root.table << endl;
+  struct ConditionalExpression* where = ast_root.where_expression;
+  if (where != NULL)
+  {
+    cout << "WHERE" << endl;
+    print(where, LexString{NULL, 0});
+  }
   struct GroupbyColumns* groupby = ast_root.groupby_columns;
   if (groupby != NULL)
   {
@@ -423,6 +429,131 @@ RestSQLPreparer::print()
     printf("No aggregation program.\n\n");
   }
   return true;
+}
+
+void
+RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
+{
+  const char* opstr = NULL;
+  bool prefix_op = false;
+  switch(ce->op)
+  {
+  case T_IDENTIFIER:
+    cout << ce->identifier << endl;
+    return;
+  case T_INT:
+    cout << ce->constant_integer << endl;
+    return;
+  case T_OR:
+    opstr = "OR";
+    break;
+  case T_XOR:
+    opstr = "XOR";
+    break;
+  case T_AND:
+    opstr = "AND";
+    break;
+  case T_NOT:
+    opstr = "NOT";
+    prefix_op = true;
+    break;
+  case T_EQUALS:
+    opstr = "=";
+    break;
+  case T_GE:
+    opstr = ">=";
+    break;
+  case T_GT:
+    opstr = ">";
+    break;
+  case T_LE:
+    opstr = "<=";
+    break;
+  case T_LT:
+    opstr = "<";
+    break;
+  case T_NOT_EQUALS:
+    opstr = "!=";
+    break;
+  case T_IS:
+    {
+      cout << "IS" << endl <<
+        prefix << "+- ";
+      LexString prefix_arg = prefix.concat(LexString{"|  ", 3}, m_aalloc);
+      print(ce->is.arg, prefix_arg);
+      cout << prefix << "\\- ";
+      if (ce->is.null == true)
+      {
+        cout << "NULL" << endl;
+        return;
+      }
+      if (ce->is.null == false)
+      {
+        cout << "NOT NULL" << endl;
+        return;
+      }
+      assert(false);
+    }
+  case T_BITWISE_OR:
+    opstr = "BITWISE-OR (|)";
+    break;
+  case T_BITWISE_AND:
+    opstr = "&";
+    break;
+  case T_BITSHIFT_LEFT:
+    opstr = "<<";
+    break;
+  case T_BITSHIFT_RIGHT:
+    opstr = ">>";
+    break;
+  case T_PLUS:
+    opstr = "+";
+    break;
+  case T_MINUS:
+    opstr = "-";
+    break;
+  case T_MULTIPLY:
+    opstr = "*";
+    break;
+  case T_DIVIDE:
+    opstr = "/";
+    break;
+  case T_MODULO:
+    opstr = "%";
+    break;
+  case T_BITWISE_XOR:
+    opstr = "^";
+    break;
+  case T_EXCLAMATION:
+    opstr = "!";
+    prefix_op = true;
+    break;
+  case T_INTERVAL:
+    opstr = "INTERVAL";
+    // todo what?
+    break;
+  default:
+    // todo rather than abort, assert false with message, maybe have to make new macro.
+    // Unknown operator
+    assert(false);
+  }
+  if (prefix_op)
+  {
+    cout << opstr << endl <<
+         prefix << "\\- ";
+    LexString prefix_arg = prefix.concat(LexString{"   ", 3}, m_aalloc);
+    print(ce->args.left, prefix_arg);
+  }
+  else
+  {
+    cout << opstr << endl <<
+      prefix << "+- ";
+    LexString prefix_left = prefix.concat(LexString{"|  ", 3}, m_aalloc);
+    print(ce->args.left, prefix_left);
+    cout << prefix << "\\- ";
+    LexString prefix_right = prefix.concat(LexString{"   ", 3}, m_aalloc);
+    print(ce->args.right, prefix_right);
+  }
 }
 
 int

@@ -146,3 +146,21 @@ select col1
       ,col3 as last
 from table
 group by col1, col3;'
+runtest "Condition" ./ParseCompileTest $'
+select col1
+      ,sum(col2)
+      ,max(col3)
+      ,col4 as last
+from table
+where col2=col3+5 xor
+  col2 <> col4 and
+  !(col2 >= 57)
+group by col1, col3;'
+runtest "Complex operator precedence" ./ParseCompileTest $'
+select a
+from table
+where (
+a or a || a xor a and a && not a = a >= a > a <= a < a != a <> a is null | a & a << a >> a + a - a * a / a % a ^ ! a
+) AND (
+! a ^ a % a / a * a - a + a >> a << a & a | a is not null <> a != a < a <= a > a >= a = not a && a and a xor a || a or a
+);'

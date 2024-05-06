@@ -246,16 +246,36 @@ QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK                            [^\0`\200
 
  /* Section for functionality (happy path) rules */
 
-"%" keyword(MODULO);
-"(" keyword(LEFT);
-")" pos_keyword(RIGHT);
-"*" keyword(MULTIPLY);
-"+" keyword(PLUS);
-"," keyword(COMMA);
-"-" keyword(MINUS);
-"/" keyword(DIVIDE);
-";" keyword(SEMICOLON);
+ /* Operators, strongest binding last */
+"or"|"||"  keyword(OR);
+"xor"      keyword(XOR);
+"and"|"&&" keyword(AND);
+"not"      keyword(NOT);
+"="        keyword(EQUALS);
+">="       keyword(GE);
+">"        keyword(GT);
+"<="       keyword(LE);
+"<"        keyword(LT);
+"<>"|"!="  keyword(NOT_EQUALS);
+"is"       keyword(IS);
+"|"        keyword(BITWISE_OR);
+"&"        keyword(BITWISE_AND);
+"<<"       keyword(BITSHIFT_LEFT);
+">>"       keyword(BITSHIFT_RIGHT);
+"+"        keyword(PLUS);
+"-"        keyword(MINUS);
+"*"        keyword(MULTIPLY);
+"/"        keyword(DIVIDE);
+"%"        keyword(MODULO);
+"^"        keyword(BITWISE_XOR);
+"!"        keyword(EXCLAMATION);
+"interval" keyword(INTERVAL);
 
+ /* Non-operator keywords */
+"("     keyword(LEFT);
+")"     pos_keyword(RIGHT);
+","     keyword(COMMA);
+";" keyword(SEMICOLON);
 as      keyword(AS);
 avg     pos_keyword(AVG);
 by      keyword(BY);
@@ -264,8 +284,10 @@ from    keyword(FROM);
 group   keyword(GROUP);
 max     pos_keyword(MAX);
 min     pos_keyword(MIN);
+null    keyword(NULL);
 select  keyword(SELECT);
 sum     pos_keyword(SUM);
+where   keyword(WHERE);
 
 [ \t\r\n] ; // ignore whitespace
 
@@ -323,7 +345,7 @@ sum     pos_keyword(SUM);
 
  /* Bottom section for rules to catch errors */
 
-[\001-\010\013\014\016-\037\041-\043\046\047\056\072\074-\100\133-\137\173-\177] {
+[\001-\010\013\014\016-\037\042\043\047\056\072\077-\100\133-\135\137\173\175-\177] {
   /*
    * We have no default rule. Instead, this rule is carefully maintained to
    * catch anything that other rules won't. This is mostly for documentation

@@ -87,6 +87,13 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
     RES->output_name = LexString{aggfun_begin, aggfun_len}; \
     RES->next = NULL; \
   } while (0)
+#define init_cond(RES,LEFT,OP,RIGHT) do \
+  { \
+    initptr(RES); \
+    RES->args.left = LEFT; \
+    RES->op = OP; \
+    RES->args.right = RIGHT; \
+  } while (0)
 }
 
 /* This defines the datatype for an AST node. This includes lexer tokens. */
@@ -106,18 +113,55 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
   } lsl;
   struct Outputs* outputs;
   struct GroupbyColumns* groupby_columns;
+  struct ConditionalExpression* conditional_expression;
   AggregationAPICompiler::Expr* arith_expr;
 }
 
 %token<ival> T_INT
 %token<fval> T_FLOAT
-%token T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_LEFT
+%token T_LEFT
 %token<pos_keyword> T_COUNT T_MAX T_MIN T_SUM T_AVG T_RIGHT
-%token T_SELECT T_FROM T_GROUP T_BY T_AS
+%token T_SELECT T_FROM T_GROUP T_BY T_AS T_WHERE
 %token T_SEMICOLON
+%token T_OR T_XOR T_AND T_NOT T_EQUALS T_GE T_GT T_LE T_LT T_NOT_EQUALS T_IS T_NULL T_BITWISE_OR T_BITWISE_AND T_BITSHIFT_LEFT T_BITSHIFT_RIGHT T_PLUS T_MINUS T_MULTIPLY T_DIVIDE T_MODULO T_BITWISE_XOR T_EXCLAMATION T_INTERVAL
 
+/*
+ * MySQL operator presedence, strongest binding first:
+ * See https://dev.mysql.com/doc/refman/8.0/en/operator-precedence.html
+ *   INTERVAL
+ *   BINARY, COLLATE
+ *   !
+ *   - (unary minus), ~ (unary bit inversion)
+ *   ^
+ *   *, /, DIV, %, MOD
+ *   -, +
+ *   <<, >>
+ *   &
+ *   |
+ *   = (comparison), <=>, >=, >, <=, <, <>, !=, IS, LIKE, REGEXP, IN, MEMBER OF
+ *   BETWEEN, CASE, WHEN, THEN, ELSE
+ *   NOT
+ *   AND, &&
+ *   XOR
+ *   OR, ||
+ *   = (assignment), :=
+ */
+
+ /* Presedence of implemented operators, strongest binding last */
+%left T_OR
+%left T_XOR
+%left T_AND
+%precedence T_NOT
+%left T_EQUALS T_GE T_GT T_LE T_LT T_NOT_EQUALS T_IS
+%left T_BITWISE_OR
+%left T_BITWISE_AND
+%left T_BITSHIFT_LEFT T_BITSHIFT_RIGHT
 %left T_PLUS T_MINUS
 %left T_MULTIPLY T_DIVIDE T_MODULO
+%left T_BITWISE_XOR
+%precedence T_EXCLAMATION
+%left T_INTERVAL
+
 
 %token T_ERR
 
@@ -129,16 +173,18 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 %type<outputs> outputlist output aliased_output nonaliased_output
 %type<pos_keyword> aggfun
 %type<arith_expr> arith_expr
+%type<conditional_expression> where_opt cond_expr
 
 %start selectstatement
 
 %%
 
-selectstatement: T_SELECT outputlist T_FROM identifier groupby_opt T_SEMICOLON
+selectstatement: T_SELECT outputlist T_FROM identifier where_opt groupby_opt T_SEMICOLON
                  {
                    context->ast_root.outputs = $2;
                    context->ast_root.table = $4;
-                   context->ast_root.groupby_columns = $5;
+                   context->ast_root.where_expression = $5;
+                   context->ast_root.groupby_columns = $6;
                  }
 
 outputlist: output
@@ -244,6 +290,135 @@ identifier: T_IDENTIFIER
             {
               $$ = $1;
             }
+
+where_opt: %empty
+           {
+             $$ = NULL;
+           }
+         | T_WHERE cond_expr
+           {
+             $$ = $2;
+           }
+
+cond_expr: identifier
+           {
+             initptr($$);
+             $$->op = T_IDENTIFIER;
+             $$->identifier = $1;
+           }
+         | T_INT
+           {
+             initptr($$);
+             $$->op = T_INT;
+             $$->constant_integer = $1;
+           }
+         | T_LEFT cond_expr T_RIGHT
+           {
+             $$ = $2;
+           }
+         | cond_expr T_OR cond_expr
+          {
+            init_cond($$, $1, T_OR, $3);
+          }
+         | cond_expr T_XOR cond_expr
+          {
+            init_cond($$, $1, T_XOR, $3);
+          }
+         | cond_expr T_AND cond_expr
+          {
+            init_cond($$, $1, T_AND, $3);
+          }
+         | T_NOT cond_expr
+          {
+            init_cond($$, $2, T_NOT, NULL);
+          }
+         | cond_expr T_EQUALS cond_expr
+          {
+            init_cond($$, $1, T_EQUALS, $3);
+          }
+         | cond_expr T_GE cond_expr
+          {
+            init_cond($$, $1, T_GE, $3);
+          }
+         | cond_expr T_GT cond_expr
+          {
+            init_cond($$, $1, T_GT, $3);
+          }
+         | cond_expr T_LE cond_expr
+          {
+            init_cond($$, $1, T_LE, $3);
+          }
+         | cond_expr T_LT cond_expr
+          {
+            init_cond($$, $1, T_LT, $3);
+          }
+         | cond_expr T_NOT_EQUALS cond_expr
+          {
+            init_cond($$, $1, T_NOT_EQUALS, $3);
+          }
+         | cond_expr T_IS T_NULL
+          {
+             initptr($$);
+             $$->op = T_IS;
+             $$->is.arg = $1;
+             $$->is.null = true;
+          }
+         | cond_expr T_IS T_NOT T_NULL
+          {
+             initptr($$);
+             $$->op = T_IS;
+             $$->is.arg = $1;
+             $$->is.null = false;
+          }
+         | cond_expr T_BITWISE_OR cond_expr
+          {
+            init_cond($$, $1, T_BITWISE_OR, $3);
+          }
+         | cond_expr T_BITWISE_AND cond_expr
+          {
+            init_cond($$, $1, T_BITWISE_AND, $3);
+          }
+         | cond_expr T_BITSHIFT_LEFT cond_expr
+          {
+            init_cond($$, $1, T_BITSHIFT_LEFT, $3);
+          }
+         | cond_expr T_BITSHIFT_RIGHT cond_expr
+          {
+            init_cond($$, $1, T_BITSHIFT_RIGHT, $3);
+          }
+         | cond_expr T_PLUS cond_expr
+          {
+            init_cond($$, $1, T_PLUS, $3);
+          }
+         | cond_expr T_MINUS cond_expr
+          {
+            init_cond($$, $1, T_MINUS, $3);
+          }
+         | cond_expr T_MULTIPLY cond_expr
+          {
+            init_cond($$, $1, T_MULTIPLY, $3);
+          }
+         | cond_expr T_DIVIDE cond_expr
+          {
+            init_cond($$, $1, T_DIVIDE, $3);
+          }
+         | cond_expr T_MODULO cond_expr
+          {
+            init_cond($$, $1, T_MODULO, $3);
+          }
+         | cond_expr T_BITWISE_XOR cond_expr
+          {
+            init_cond($$, $1, T_BITWISE_XOR, $3);
+          }
+         | T_EXCLAMATION cond_expr
+          {
+            init_cond($$, $2, T_EXCLAMATION, NULL);
+          }
+         | cond_expr T_INTERVAL cond_expr
+          {
+            // todo what?
+            init_cond($$, $1, T_INTERVAL, $3);
+          }
 
 groupby_opt: %empty
              {
