@@ -186,3 +186,30 @@ runtest "order by" ./ParseCompileTest $'select col1 from tbl order by col1;'
 runtest "order by 2 columns" ./ParseCompileTest $'select col1 from tbl order by col1, col2;'
 runtest "group and order by" ./ParseCompileTest $'select col1, `col #2`, max(col3) from tbl group by col1, `col #2` order by col1, `col #2`;'
 runtest "order by ASC/DESC" ./ParseCompileTest $'select col1 from tbl order by col1, col2 ASC, col3 DESC, col4;'
+
+# Complex queries
+
+cat > "$tmpfile" <<"EOF"
+select
+        l_returnflag,
+        l_linestatus,
+        sum(l_quantity) as sum_qty,
+        sum(l_extendedprice) as sum_base_price,
+        sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+        sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+        avg(l_quantity) as avg_qty,
+        avg(l_extendedprice) as avg_price,
+        avg(l_discount) as avg_disc,
+        count(*) as count_order
+from
+        lineitem
+where
+        l_shipdate <= date_sub('1998-12-01', interval '90' day)
+group by
+        l_returnflag,
+        l_linestatus
+order by
+        l_returnflag,
+        l_linestatus;
+EOF
+runtest "dbt3-1.10/queries/mysql/1_2.sql" ./ParseCompileTest "$(cat "$tmpfile")"

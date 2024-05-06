@@ -1054,3 +1054,67 @@ ORDER BY
 No aggregation program.
 
 => Exit code: 0
+
+===== dbt3-1.10/queries/mysql/1_2.sql =====
+SELECT
+  Out_0:`l_returnflag`
+   = C4:`l_returnflag`
+  Out_1:`l_linestatus`
+   = C5:`l_linestatus`
+  Out_2:`sum_qty`
+   = A0:Sum(`l_quantity`)
+  Out_3:`sum_base_price`
+   = A1:Sum(`l_extendedprice`)
+  Out_4:`sum_disc_price`
+   = A2:Sum((`l_extendedprice` * (1 - `l_discount`)))
+  Out_5:`sum_charge`
+   = A3:Sum(((`l_extendedprice` * (1 - `l_discount`)) * (1 + `l_tax`)))
+  Out_6:`avg_qty`
+   = CLIENT-SIDE CALCULATION: A0:Sum(`l_quantity`) / A4:Count(`l_quantity`)
+  Out_7:`avg_price`
+   = CLIENT-SIDE CALCULATION: A1:Sum(`l_extendedprice`) / A5:Count(`l_extendedprice`)
+  Out_8:`avg_disc`
+   = CLIENT-SIDE CALCULATION: A6:Sum(`l_discount`) / A7:Count(`l_discount`)
+  Out_9:`count_order`
+   = A8:Count(1)
+FROM lineitem
+WHERE
+<=
++- l_shipdate
+\- DATE_SUB
+   +- STRING: 1998-12-01
+   \- INTERVAL
+      +- STRING: 90
+      \- DAY
+GROUP BY
+  C4:`l_returnflag`
+  C5:`l_linestatus`
+ORDER BY
+  C4:`l_returnflag` ASC
+  C5:`l_linestatus` ASC
+
+Aggregation program (21 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`l_quantity`
+Sum    A00  r00 A00:SUM <- r00:`l_quantity`
+Load   r01  C01 r01 = C01:`l_extendedprice`
+Sum    A01  r01 A01:SUM <- r01:`l_extendedprice`
+LoadI  r02  I00 r02 = I00:1
+Load   r03  C02 r03 = C02:`l_discount`
+Mov    r04  r02 r04 = r02:1
+Minus  r02  r03 r02:1 -= r03:`l_discount`
+Mov    r05  r01 r05 = r01:`l_extendedprice`
+Mul    r01  r02 r01:`l_extendedprice` *= r02:(1 - `l_discount`)
+Sum    A02  r01 A02:SUM <- r01:(`l_extendedprice` * (1 - `l_discount`))
+Load   r02  C03 r02 = C03:`l_tax`
+Mov    r06  r04 r06 = r04:1
+Add    r04  r02 r04:1 += r02:`l_tax`
+Mul    r01  r04 r01:(`l_extendedprice` * (1 - `l_discount`)) *= r04:(1 + `l_tax`)
+Sum    A03  r01 A03:SUM <- r01:((`l_extendedprice` * (1 - `l_discount`)) * (1 + `l_tax`))
+Count  A04  r00 A04:COUNT <- r00:`l_quantity`
+Count  A05  r05 A05:COUNT <- r05:`l_extendedprice`
+Sum    A06  r03 A06:SUM <- r03:`l_discount`
+Count  A07  r03 A07:COUNT <- r03:`l_discount`
+Count  A08  r06 A08:COUNT <- r06:1
+
+=> Exit code: 0
