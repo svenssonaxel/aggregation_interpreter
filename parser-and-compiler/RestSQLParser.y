@@ -112,7 +112,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
     struct lsl* next;
   } lsl;
   struct Outputs* outputs;
-  struct GroupbyColumns* groupby_columns;
+  struct GroupbyColumns* groupby_cols;
   struct ConditionalExpression* conditional_expression;
   AggregationAPICompiler::Expr* arith_expr;
 }
@@ -169,7 +169,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 %token T_COMMA
 
 %type<str> identifier
-%type<groupby_columns> groupby_opt groupby groupby_columns groupby_column
+%type<groupby_cols> groupby_opt groupby groupby_cols groupby_col
 %type<outputs> outputlist output aliased_output nonaliased_output
 %type<pos_keyword> aggfun
 %type<arith_expr> arith_expr
@@ -179,277 +179,116 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 
 %%
 
-selectstatement: T_SELECT outputlist T_FROM identifier where_opt groupby_opt T_SEMICOLON
-                 {
-                   context->ast_root.outputs = $2;
-                   context->ast_root.table = $4;
-                   context->ast_root.where_expression = $5;
-                   context->ast_root.groupby_columns = $6;
-                 }
+selectstatement:
+  T_SELECT outputlist T_FROM identifier where_opt groupby_opt T_SEMICOLON
+  {
+    context->ast_root.outputs = $2;
+    context->ast_root.table = $4;
+    context->ast_root.where_expression = $5;
+    context->ast_root.groupby_columns = $6;
+  }
 
-outputlist: output
-            {
-              $$ = $1;
-            }
-          | output T_COMMA outputlist
-            {
-              $$ = $1;
-              $$->next = $3;
-            }
+outputlist:
+  output                                { $$ = $1; }
+| output T_COMMA outputlist             { $$ = $1; $$->next = $3; }
 
-output: aliased_output
-      | nonaliased_output
+output:
+  aliased_output
+| nonaliased_output
 
-aliased_output: nonaliased_output T_AS identifier
-                {
-                  $$ = $1;
-                  $$->output_name = $3;
-                }
+aliased_output:
+  nonaliased_output T_AS identifier     { $$ = $1; $$->output_name = $3; }
 
-nonaliased_output: identifier
-                   {
-                     initptr($$);
-                     $$->is_agg = false;
-                     $$->col_name = $1;
-                     $$->output_name = $$->col_name;
-                     $$->next = NULL;
-                   }
-                 | aggfun T_LEFT arith_expr T_RIGHT
-                   {
-                     init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
-                   }
-                 | T_COUNT T_LEFT arith_expr T_RIGHT
-                   {
-                     // This needs to be a separate rule from the "aggfun..."
-                     // rule above in order to avoid a shift/reduce conflict
-                     // with the COUNT(*) rule below.
-                     init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
-                   }
-                 | T_COUNT T_LEFT T_MULTIPLY T_RIGHT
-                   {
-                     // COUNT(*) is implemented as COUNT(1).
-                     init_aggfun($$,
-                                 $1.type,
-                                 context->get_agg()->ConstantInteger(1),
-                                 $1.begin,
-                                 $4.begin + 1);
-                   }
+nonaliased_output:
+  identifier                            {
+                                          initptr($$);
+                                          $$->is_agg = false;
+                                          $$->col_name = $1;
+                                          $$->output_name = $$->col_name;
+                                          $$->next = NULL;
+                                        }
+| aggfun T_LEFT arith_expr T_RIGHT      { init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1); }
+| T_COUNT T_LEFT arith_expr T_RIGHT     {
+                                          // This needs to be a separate rule from the "aggfun..."
+                                          // rule above in order to avoid a shift/reduce conflict
+                                          // with the COUNT(*) rule below.
+                                          init_aggfun($$, $1.type, $3, $1.begin, $4.begin + 1);
+                                        }
+| T_COUNT T_LEFT T_MULTIPLY T_RIGHT     {
+                                          // COUNT(*) is implemented as COUNT(1).
+                                          init_aggfun($$,
+                                                      $1.type,
+                                                      context->get_agg()->ConstantInteger(1),
+                                                      $1.begin,
+                                                      $4.begin + 1);
+                                        }
 
 /* T_COUNT not included here, in order to implement COUNT(*) */
-aggfun: T_AVG
-        {
-          $$ = $1;
-        }
-      | T_MAX
-        {
-          $$ = $1;
-        }
-      | T_MIN
-        {
-          $$ = $1;
-        }
-      | T_SUM
-        {
-          $$ = $1;
-        }
+aggfun:
+  T_AVG                                 { $$ = $1; }
+| T_MAX                                 { $$ = $1; }
+| T_MIN                                 { $$ = $1; }
+| T_SUM                                 { $$ = $1; }
 
-arith_expr: identifier
-            {
-              $$ = context->get_agg()->Load($1);
-            }
-          | T_INT
-            {
-                $$ = context->get_agg()->ConstantInteger($1);
-            }
-          | T_LEFT arith_expr T_RIGHT
-            {
-              $$ = $2;
-            }
-          | arith_expr T_PLUS arith_expr
-            {
-              $$ = context->get_agg()->Add($1, $3);
-            }
-          | arith_expr T_MINUS arith_expr
-            {
-              $$ = context->get_agg()->Minus($1, $3);
-            }
-          | arith_expr T_MULTIPLY arith_expr
-            {
-              $$ = context->get_agg()->Mul($1, $3);
-            }
-          | arith_expr T_DIVIDE arith_expr
-            {
-              $$ = context->get_agg()->Div($1, $3);
-            }
-          | arith_expr T_MODULO arith_expr
-            {
-              $$ = context->get_agg()->Rem($1, $3);
-            }
+arith_expr:
+  identifier                            { $$ = context->get_agg()->Load($1); }
+| T_INT                                 { $$ = context->get_agg()->ConstantInteger($1); }
+| T_LEFT arith_expr T_RIGHT             { $$ = $2; }
+| arith_expr T_PLUS arith_expr          { $$ = context->get_agg()->Add($1, $3); }
+| arith_expr T_MINUS arith_expr         { $$ = context->get_agg()->Minus($1, $3); }
+| arith_expr T_MULTIPLY arith_expr      { $$ = context->get_agg()->Mul($1, $3); }
+| arith_expr T_DIVIDE arith_expr        { $$ = context->get_agg()->Div($1, $3); }
+| arith_expr T_MODULO arith_expr        { $$ = context->get_agg()->Rem($1, $3); }
 
-identifier: T_IDENTIFIER
-            {
-              $$ = $1;
-            }
+identifier:
+  T_IDENTIFIER                          { $$ = $1; }
 
-where_opt: %empty
-           {
-             $$ = NULL;
-           }
-         | T_WHERE cond_expr
-           {
-             $$ = $2;
-           }
+where_opt:
+  %empty                                { $$ = NULL; }
+| T_WHERE cond_expr                     { $$ = $2; }
 
-cond_expr: identifier
-           {
-             initptr($$);
-             $$->op = T_IDENTIFIER;
-             $$->identifier = $1;
-           }
-         | T_INT
-           {
-             initptr($$);
-             $$->op = T_INT;
-             $$->constant_integer = $1;
-           }
-         | T_LEFT cond_expr T_RIGHT
-           {
-             $$ = $2;
-           }
-         | cond_expr T_OR cond_expr
-          {
-            init_cond($$, $1, T_OR, $3);
-          }
-         | cond_expr T_XOR cond_expr
-          {
-            init_cond($$, $1, T_XOR, $3);
-          }
-         | cond_expr T_AND cond_expr
-          {
-            init_cond($$, $1, T_AND, $3);
-          }
-         | T_NOT cond_expr
-          {
-            init_cond($$, $2, T_NOT, NULL);
-          }
-         | cond_expr T_EQUALS cond_expr
-          {
-            init_cond($$, $1, T_EQUALS, $3);
-          }
-         | cond_expr T_GE cond_expr
-          {
-            init_cond($$, $1, T_GE, $3);
-          }
-         | cond_expr T_GT cond_expr
-          {
-            init_cond($$, $1, T_GT, $3);
-          }
-         | cond_expr T_LE cond_expr
-          {
-            init_cond($$, $1, T_LE, $3);
-          }
-         | cond_expr T_LT cond_expr
-          {
-            init_cond($$, $1, T_LT, $3);
-          }
-         | cond_expr T_NOT_EQUALS cond_expr
-          {
-            init_cond($$, $1, T_NOT_EQUALS, $3);
-          }
-         | cond_expr T_IS T_NULL
-          {
-             initptr($$);
-             $$->op = T_IS;
-             $$->is.arg = $1;
-             $$->is.null = true;
-          }
-         | cond_expr T_IS T_NOT T_NULL
-          {
-             initptr($$);
-             $$->op = T_IS;
-             $$->is.arg = $1;
-             $$->is.null = false;
-          }
-         | cond_expr T_BITWISE_OR cond_expr
-          {
-            init_cond($$, $1, T_BITWISE_OR, $3);
-          }
-         | cond_expr T_BITWISE_AND cond_expr
-          {
-            init_cond($$, $1, T_BITWISE_AND, $3);
-          }
-         | cond_expr T_BITSHIFT_LEFT cond_expr
-          {
-            init_cond($$, $1, T_BITSHIFT_LEFT, $3);
-          }
-         | cond_expr T_BITSHIFT_RIGHT cond_expr
-          {
-            init_cond($$, $1, T_BITSHIFT_RIGHT, $3);
-          }
-         | cond_expr T_PLUS cond_expr
-          {
-            init_cond($$, $1, T_PLUS, $3);
-          }
-         | cond_expr T_MINUS cond_expr
-          {
-            init_cond($$, $1, T_MINUS, $3);
-          }
-         | cond_expr T_MULTIPLY cond_expr
-          {
-            init_cond($$, $1, T_MULTIPLY, $3);
-          }
-         | cond_expr T_DIVIDE cond_expr
-          {
-            init_cond($$, $1, T_DIVIDE, $3);
-          }
-         | cond_expr T_MODULO cond_expr
-          {
-            init_cond($$, $1, T_MODULO, $3);
-          }
-         | cond_expr T_BITWISE_XOR cond_expr
-          {
-            init_cond($$, $1, T_BITWISE_XOR, $3);
-          }
-         | T_EXCLAMATION cond_expr
-          {
-            init_cond($$, $2, T_EXCLAMATION, NULL);
-          }
-         | cond_expr T_INTERVAL cond_expr
-          {
-            // todo what?
-            init_cond($$, $1, T_INTERVAL, $3);
-          }
+cond_expr:
+  identifier                            { initptr($$); $$->op = T_IDENTIFIER; $$->identifier = $1; }
+| T_INT                                 { initptr($$); $$->op = T_INT; $$->constant_integer = $1; }
+| T_LEFT cond_expr T_RIGHT              { $$ = $2; }
+| cond_expr T_OR cond_expr              { init_cond($$, $1, T_OR, $3); }
+| cond_expr T_XOR cond_expr             { init_cond($$, $1, T_XOR, $3); }
+| cond_expr T_AND cond_expr             { init_cond($$, $1, T_AND, $3); }
+| T_NOT cond_expr                       { init_cond($$, $2, T_NOT, NULL); }
+| cond_expr T_EQUALS cond_expr          { init_cond($$, $1, T_EQUALS, $3); }
+| cond_expr T_GE cond_expr              { init_cond($$, $1, T_GE, $3); }
+| cond_expr T_GT cond_expr              { init_cond($$, $1, T_GT, $3); }
+| cond_expr T_LE cond_expr              { init_cond($$, $1, T_LE, $3); }
+| cond_expr T_LT cond_expr              { init_cond($$, $1, T_LT, $3); }
+| cond_expr T_NOT_EQUALS cond_expr      { init_cond($$, $1, T_NOT_EQUALS, $3); }
+| cond_expr T_IS T_NULL                 { initptr($$); $$->op = T_IS; $$->is.arg = $1; $$->is.null = true; }
+| cond_expr T_IS T_NOT T_NULL           { initptr($$); $$->op = T_IS; $$->is.arg = $1; $$->is.null = false; }
+| cond_expr T_BITWISE_OR cond_expr      { init_cond($$, $1, T_BITWISE_OR, $3); }
+| cond_expr T_BITWISE_AND cond_expr     { init_cond($$, $1, T_BITWISE_AND, $3); }
+| cond_expr T_BITSHIFT_LEFT cond_expr   { init_cond($$, $1, T_BITSHIFT_LEFT, $3); }
+| cond_expr T_BITSHIFT_RIGHT cond_expr  { init_cond($$, $1, T_BITSHIFT_RIGHT, $3); }
+| cond_expr T_PLUS cond_expr            { init_cond($$, $1, T_PLUS, $3); }
+| cond_expr T_MINUS cond_expr           { init_cond($$, $1, T_MINUS, $3); }
+| cond_expr T_MULTIPLY cond_expr        { init_cond($$, $1, T_MULTIPLY, $3); }
+| cond_expr T_DIVIDE cond_expr          { init_cond($$, $1, T_DIVIDE, $3); }
+| cond_expr T_MODULO cond_expr          { init_cond($$, $1, T_MODULO, $3); }
+| cond_expr T_BITWISE_XOR cond_expr     { init_cond($$, $1, T_BITWISE_XOR, $3); }
+| T_EXCLAMATION cond_expr               { init_cond($$, $2, T_EXCLAMATION, NULL); }
+| cond_expr T_INTERVAL cond_expr        { /* todo what? */ init_cond($$, $1, T_INTERVAL, $3); }
 
-groupby_opt: %empty
-             {
-               $$ = NULL;
-             }
-           | groupby
-             {
-               $$ = $1;
-             }
+groupby_opt:
+  %empty                                { $$ = NULL; }
+| groupby                               { $$ = $1; }
 
-groupby: T_GROUP T_BY groupby_columns
-         {
-           $$ = $3;
-         }
+groupby:
+  T_GROUP T_BY groupby_cols             { $$ = $3; }
 
-groupby_columns: groupby_column
-                 {
-                   $$ = $1;
-                 }
-               | groupby_column T_COMMA groupby_columns
-                 {
-                   $$ = $1;
-                   $$->next = $3;
-                 }
+groupby_cols:
+  groupby_col                           { $$ = $1; }
+| groupby_col T_COMMA groupby_cols      { $$ = $1; $$->next = $3; }
 
-groupby_column: identifier
-                {
-                  initptr($$);
-                  $$->col_name = $1;
-                  $$->next = NULL;
-                }
+groupby_col:
+identifier                              { initptr($$); $$->col_name = $1; $$->next = NULL; }
 
 %%
 
