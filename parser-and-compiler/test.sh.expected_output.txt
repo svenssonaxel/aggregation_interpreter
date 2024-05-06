@@ -318,6 +318,20 @@ Syntax error in SQL statement: Unexpected at this point
 Failed to parse.
 => Exit code: 1
 
+===== Incomplete escape sequence in single-quoted string =====
+Syntax error in SQL statement: Incomplete escape sequence in single-quoted string
+> select a from tbl where 'word\
+!                              ^
+Failed to parse.
+=> Exit code: 1
+
+===== Unexpected end of input inside single-quoted string =====
+Syntax error in SQL statement: Unexpected end of input inside single-quoted string
+> select a from tbl where 'word
+!                         ^^^^^
+Failed to parse.
+=> Exit code: 1
+
 ===== APICompileTest =====
 Compilation example 1:
 
@@ -888,6 +902,32 @@ AND
    |  |  \- a
    |  \- a
    \- a
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== Single quoted strings =====
+SELECT
+  Out_0:`col`
+   = C0:`col`
+FROM tbl
+WHERE
+IS
++- STRING: 0x00=<00>,0x27=',0x08=<08>,0x0a=<0A>,0x0d=<0D>,0x09=<09>,0x1a=<1A>,bs=\,bs_perc=\%,bs_ul=\_,Q=Q,7=7
+\- NOT NULL
+
+No aggregation program.
+
+=> Exit code: 0
+
+===== Compound strings =====
+SELECT
+  Out_0:`col`
+   = C0:`col`
+FROM tbl
+WHERE
+STRING: hello<20>world
 
 No aggregation program.
 

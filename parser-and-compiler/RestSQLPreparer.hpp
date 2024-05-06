@@ -71,6 +71,7 @@ struct ConditionalExpression
       struct ConditionalExpression* arg;
       bool null;
     } is;
+    LexString string;
   };
 };
 
@@ -102,6 +103,8 @@ public:
     LEX_U_SURROGATE,
     LEX_NONBMP_IDENTIFIER,
     LEX_UNIMPLEMENTED_KEYWORD,
+    LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING,
+    LEX_UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING,
     LEX_ILLEGAL_TOKEN,
     LEX_UNEXPECTED_EOF_IN_QUOTED_IDENTIFIER,
     PARSER_ERROR,

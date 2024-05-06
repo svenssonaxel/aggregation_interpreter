@@ -165,7 +165,7 @@ extern void rsqlp_error(yyscan_t yyscanner, const char* s);
 
 %token T_ERR
 
-%token<str> T_IDENTIFIER
+%token<str> T_IDENTIFIER T_STRING
 %token T_COMMA
 
 %type<str> identifier
@@ -249,6 +249,7 @@ where_opt:
 
 cond_expr:
   identifier                            { initptr($$); $$->op = T_IDENTIFIER; $$->identifier = $1; }
+| T_STRING                              { initptr($$); $$->op = T_STRING; $$->string = $1; }
 | T_INT                                 { initptr($$); $$->op = T_INT; $$->constant_integer = $1; }
 | T_LEFT cond_expr T_RIGHT              { $$ = $2; }
 | cond_expr T_OR cond_expr              { init_cond($$, $1, T_OR, $3); }

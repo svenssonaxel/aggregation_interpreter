@@ -107,6 +107,7 @@
  * limited) context awareness in the lexer.
  */
 %x QUOTED_IDENTIFIER
+%x SINGLE_QUOTED_STRING
 
 /* U_PARTIAL and U_OVERLONG are only used to detect UTF-8 decoding errors. */
 U_2_PAR_1    (?# 110xxxxx                                             )[\300-\337]
@@ -166,6 +167,7 @@ U_ILLEG_BYTE [\370-\377]
 
 UNQUOTED_IDENTIFIER_CHARACTER                                          [$0-9A-Z_a-z]|{U_EXTBMP}
 QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK                            [^\0`\200-\377]|{U_EXTBMP}
+SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\134\200-\377]|{U_EXTBMP}|{U_NONBMP}
 
 /*
  * Double percent sign marking the begining (and end) of the lexical rules
@@ -238,6 +240,7 @@ QUOTED_IDENTIFIER_CHARACTER_EXCEPT_BACKTICK                            [^\0`\200
 }
 
 <INITIAL,QUOTED_IDENTIFIER>{U_NONBMP}(.|\n)* {
+  // todo: is (.|\n)* necessary above?
   context->set_err_state(
     RestSQLPreparer::ErrState::LEX_NONBMP_IDENTIFIER,
     yytext, 1);
@@ -366,9 +369,95 @@ accessible|account|action|active|add|admin|after|against|aggregate|algorithm|all
   return T_ERR;
 }
 
+ /*
+  * Single-quoted strings implemented according to
+  * https://dev.mysql.com/doc/refman/8.0/en/string-literals.html
+  *
+  * \047 is apostrophe ('), \134 is backslash (\)
+  */
+\047 {
+  BEGIN(SINGLE_QUOTED_STRING);
+  yylval->str = LexString{ NULL, 0};
+  context->m_compound_token_pos = yytext;
+  context->m_compound_token_len = 0;
+}
+<SINGLE_QUOTED_STRING>{SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH}+ {
+  yylval->str = yylval->str.concat(LexString{ yytext, size_t(yyleng) },
+                                   context->get_allocator());
+}
+<SINGLE_QUOTED_STRING>\047\047 {
+  yylval->str = yylval->str.concat(LexString{ yytext, 1 },
+                                   context->get_allocator());
+}
+<SINGLE_QUOTED_STRING>\047 {
+  context->m_compound_token_len = yytext + 1 - context->m_compound_token_pos;
+  BEGIN(INITIAL);
+  return T_STRING;
+}
+<SINGLE_QUOTED_STRING>\134. {
+  char escchar = yytext[1];
+  LexString result = { NULL, 0};
+  switch (escchar)
+  {
+  case '0':
+    result = { "\0", 1 };
+    break;
+  case '\'':
+    result = { "\'", 1 };
+     break;
+  case '"':
+    result = { "\"", 1 };
+    break;
+  case 'b':
+    result = { "\b", 1 };
+    break;
+  case 'n':
+    result = { "\n", 1 };
+    break;
+  case 'r':
+    result = { "\r", 1 };
+    break;
+  case 't':
+    result = { "\t", 1 };
+    break;
+  case 'Z':
+    result = { "\032", 1 };
+    break;
+  case '\\':
+    result = { "\\", 1 };
+    break;
+  case '%':
+    result = { "\\%", 2 };
+    break;
+  case '_':
+    result = { "\\_", 2 };
+    break;
+  default:
+    result = { &yytext[1], 1 };
+    break;
+  }
+  yylval->str = yylval->str.concat(result, context->get_allocator());
+}
+<SINGLE_QUOTED_STRING>\134 {
+  context->set_err_state(
+    RestSQLPreparer::ErrState::LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING,
+    yytext, 1);
+  return T_ERR;
+}
+<SINGLE_QUOTED_STRING><<EOF>> {
+  context->set_err_state(
+    RestSQLPreparer::ErrState::LEX_UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING,
+    context->m_compound_token_pos,
+    yytext - context->m_compound_token_pos);
+  return T_ERR;
+}
+<SINGLE_QUOTED_STRING>\047[ \t\r\n]+\047 {
+  // Quoted strings placed next to each other are concatenated to a single string.
+}
+
  /* Bottom section for rules to catch errors */
 
-[\001-\010\013\014\016-\037\042\043\047\056\072\077-\100\133-\135\137\173\175-\177] {
+[\001-\010\013\014\016-\037\042\043\056\072\077-\100\133-\135\137\173\175-\177] {
   /*
    * We have no default rule. Instead, this rule is carefully maintained to
    * catch anything that other rules won't. This is mostly for documentation

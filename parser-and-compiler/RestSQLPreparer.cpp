@@ -121,6 +121,12 @@ RestSQLPreparer::parse()
   case ErrState::LEX_UNIMPLEMENTED_KEYWORD:
     msg = "Unimplemented keyword. If this was intended as an identifier, use backtick quotation.";
     break;
+  case ErrState::LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING:
+    msg = "Incomplete escape sequence in single-quoted string";
+    break;
+  case ErrState::LEX_UNEXPECTED_EOF_IN_SINGLE_QUOTED_STRING:
+    msg = "Unexpected end of input inside single-quoted string";
+    break;
   case ErrState::LEX_ILLEGAL_TOKEN:
     msg = "Illegal token";
     break;
@@ -444,6 +450,25 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
   case T_IDENTIFIER:
     cout << ce->identifier << endl;
     return;
+  case T_STRING:
+    {
+      cout << "STRING: ";
+      for(uint i = 0; i < ce->string.len; i++)
+      {
+        char c = ce->string.str[i];
+        if ( 0x21 <= c && c <= 0x7E && c != '<' && c != '>')
+        {
+          cout << c;
+        }
+        else
+        {
+          static const char* hex = "0123456789ABCDEF";
+          cout << "<" << hex[(c >> 4) & 0xF] << hex[c & 0xF] << ">";
+        }
+      }
+      cout << endl;
+      return;
+    }
   case T_INT:
     cout << ce->constant_integer << endl;
     return;

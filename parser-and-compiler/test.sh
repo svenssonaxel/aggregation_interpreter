@@ -46,6 +46,9 @@ explainNUL()
     return $ec
 }
 
+tmpfile=$(mktemp)
+trap 'rm -f $tmpfile' EXIT
+
 # Test errors
 
 runtest "Null byte at beginning" explainNUL ./ParseCompileTest 'select a from tbl;' 0
@@ -100,6 +103,8 @@ runtest "Two escaped identifiers, 1st unexpected" ./ParseCompileTest $'select a 
 runtest "Two escaped identifiers, 2nd unexpected" ./ParseCompileTest $'select a, `bc``de` from tbl `fg``h``i`;'
 runtest "Error marker alignment after 2-byte UTF-8 characters" ./ParseCompileTest $'select a\n      ,räksmörgås räksmörgås\nfrom tbl;'
 runtest "Error marker alignment after 3-byte UTF-8 character" ./ParseCompileTest $'select a\n      ,ᚱab ᚱab\nfrom tbl;'
+runtest "Incomplete escape sequence in single-quoted string" ./ParseCompileTest $"select a from tbl where 'word\\"
+runtest "Unexpected end of input inside single-quoted string" ./ParseCompileTest $"select a from tbl where 'word"
 
 # Test successes
 
@@ -164,3 +169,12 @@ a or a || a xor a and a && not a = a >= a > a <= a < a != a <> a is null | a & a
 ) AND (
 ! a ^ a % a / a * a - a + a >> a << a & a | a is not null <> a != a < a <= a > a >= a = not a && a and a xor a || a or a
 );'
+cat > "$tmpfile" <<"EOF"
+select col from tbl where
+'0x00=\0,0x27=\',0x08=\b,0x0a=\n,0x0d=\r,0x09=\t,0x1a=\Z,bs=\\,bs_perc=\%,bs_ul=\_,Q=\Q,7=\7'
+is not null;
+EOF
+runtest "Single quoted strings" ./ParseCompileTest "$(cat "$tmpfile")"
+runtest "Compound strings" ./ParseCompileTest "
+select col from tbl where 'hello'
+  ' world';"
