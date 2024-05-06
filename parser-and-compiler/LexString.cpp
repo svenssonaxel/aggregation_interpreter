@@ -37,8 +37,16 @@ operator<< (std::ostream& os, const LexString& ls)
  * 1) The strings are not validated and e.g. one contains an overlong encoded
  *    character.
  * 2) The strings are not normalized to the same degree as your definition for
- *    "equivalent". For example, the two strings "räksmörgås" and "räksmörgås"
- *    will compare as unequal unless they are first normalized.
+ *    "equivalent". For example, the grapheme[†] "ä", i.e. the shape that looks
+ *    like a small character "a" with two dots above it, can be produced by the
+ *    code point U+00e4 (LATIN SMALL LETTER A WITH DIAERESIS), or by a sequence
+ *    of the two code points U+0061 (LATIN SMALL LETTER A) and U+0308 (COMBINING
+ *    DIAERESIS). Thus, two strings can look the same when printed, yet compare
+ *    as unequal. Unicode normalization[‡] is the process of transforming
+ *    strings to a canonical form, so that strings that look the same when
+ *    printed (are more likely to) compare as equal.
+ *    [†] https://unicode.org/glossary/#grapheme
+ *    [‡] https://unicode.org/glossary/#normalization
  */
 bool
 LexString::operator== (const LexString& other) const
@@ -56,15 +64,10 @@ LexString::operator== (const LexString& other) const
 LexString
 LexString::concat(const LexString other, ArenaAllocator* allocator)
 {
-  if(this->str == NULL &&
-     this->len == 0)
+  if (this->str == NULL)
   {
+    assert(this->len == 0);
     return other;
-  }
-  if(&this->str[this->len] == other.str) {
-    // The lifetime of the returned LexString will end when the lifetime of
-    // either argument ends.
-    return LexString{this->str, this->len + other.len};
   }
   size_t concatenated_len = this->len + other.len;
   // It's possible that concatenated_str == this->str. The lifetime of the

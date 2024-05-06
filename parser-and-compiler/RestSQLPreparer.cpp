@@ -191,13 +191,14 @@ RestSQLPreparer::parse()
         uint err_marker_pos = line_started_at;
         // We use has_width to find the number of code points in the string
         // before and inside the error. This is a quite crude approximation of
-        // the number of graphemes. Thus, the error marker will be misaligned
+        // the number of graphemes[†]. Thus, the error marker will be misaligned
         // whenever the number of graphemes do not match the number of code
         // points, e.g. when the string contains combining, zero-width or
         // control characters that are often used with emojis or with diacritics
         // that are unusual or NFD/NDKD normalized. This approximation is used
         // for the sake of simplicity and stability, as correctness is less
         // important in this case.
+        // [†] https://unicode.org/glossary/#grapheme
         while (err_marker_pos < err_pos)
         {
           if (has_width(err_marker_pos))
