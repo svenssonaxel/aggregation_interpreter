@@ -178,9 +178,9 @@ extern void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t yyscanner, const char* s);
 %token T_COMMA
 
 %type<str> identifier
-%type<groupby_cols> groupby_opt groupby groupby_cols groupby_col
+%type<groupby_cols> groupby_opt groupby_cols groupby_col
 %type<orderby_cols> orderby_opt orderby orderby_cols orderby_col
-%type<outputs> outputlist output aliased_output nonaliased_output
+%type<outputs> outputlist output nonaliased_output
 %type<ival> aggfun interval_type
 %type<arith_expr> arith_expr
 %type<conditional_expression> where_opt cond_expr
@@ -204,11 +204,8 @@ outputlist:
 | output T_COMMA outputlist             { $$ = $1; $$->next = $3; }
 
 output:
-  aliased_output
-| nonaliased_output
-
-aliased_output:
-  nonaliased_output T_AS identifier     { $$ = $1; $$->output_name = $3; }
+  nonaliased_output                     { $$ = $1; }
+| nonaliased_output T_AS identifier     { $$ = $1; $$->output_name = $3; }
 
 nonaliased_output:
   identifier                            {
@@ -316,10 +313,7 @@ interval_type:
 
 groupby_opt:
   %empty                                { $$ = NULL; }
-| groupby                               { $$ = $1; }
-
-groupby:
-  T_GROUP T_BY groupby_cols             { $$ = $3; }
+| T_GROUP T_BY groupby_cols             { $$ = $3; }
 
 groupby_cols:
   groupby_col                           { $$ = $1; }
