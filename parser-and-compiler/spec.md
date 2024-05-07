@@ -29,7 +29,28 @@ For the meaning of functions, operators and other keywords, refer to the MySQL d
 
 ## Data types
 
-todo
+RonDB REST SQL does not support all data types.
+
+The data types supported depend on the context:
+- **SELECT-col**: columns in select expressions without aggregation.
+- **SELECT-agg**: Columns in an aggregate function argument.
+- **WHERE**: Columns in the `WHERE` condition.
+- **GROUP BY**: Columns in the `GROUP BY` column list.
+- **ORDER BY**: Columns in the `ORDER BY` column list.
+
+Refer to the following table for what data types are supported in each context.
+
+| Data type                   | **SELECT-col** | **SELECT-agg** | **WHERE** | **GROUP BY** | **ORDER BY** |
+| --------------------------- | -------------- | -------------- | --------- | ------------ | ------------ |
+| `TINYINT`                   | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `SMALLINT`                  | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `MEDIUMINT`                 | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `INT`/`INTEGER`             | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `BIGINT`                    | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `FLOAT`/`REAL`              | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `DOUBLE`/`DOUBLE PRECISION` | Yes            | Yes            | Yes       | Yes          | Yes          |
+| `DECIMAL`                   | No             | No             | Yes       | Yes          | No           |
+| `VARCHAR`                   | Yes            | No             | Yes       | Yes          | No           |
 
 ## Syntax elements
 
