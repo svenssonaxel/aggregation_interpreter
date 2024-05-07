@@ -1090,6 +1090,62 @@ No aggregation program.
 
 => Exit code: 0
 
+===== Negation =====
+SELECT
+  Out_0:`col1`
+   = C4:`col1`
+  Out_1:`min(-543)`
+   = A0:Min(-543)
+  Out_2:`sum(col2+-543)`
+   = A1:Sum((`col2` + -543))
+  Out_3:`subtraction`
+   = A2:Max((`col3` - -792))
+  Out_4:`count(a---(b---1))`
+   = A3:Count((`a` - (0 - (0 - (`b` - 1)))))
+FROM tbl
+WHERE
+AND
++- AND
+|  +- <
+|  |  +- col1
+|  |  \- -45
+|  \- >
+|     +- col2
+|     \- NEGATION
+|        \- NEGATION
+|           \- NEGATION
+|              \- NEGATION
+|                 \- NEGATION
+|                    \- col3
+\- >
+   +- col3
+   \- 7
+
+Aggregation program (20 instructions):
+Instr. DEST SRC DESCRIPTION
+LoadI  r00  I02 r00 = I02:-543
+Min    A00  r00 A00:MIN <- r00:-543
+Load   r00  C00 r00 = C00:`col2`
+LoadI  r01  I03 r01 = I03:-543
+Add    r00  r01 r00:`col2` += r01:-543
+Sum    A01  r00 A01:SUM <- r00:(`col2` + -543)
+Load   r00  C01 r00 = C01:`col3`
+LoadI  r01  I05 r01 = I05:-792
+Minus  r00  r01 r00:`col3` -= r01:-792
+Max    A02  r00 A02:MAX <- r00:(`col3` - -792)
+Load   r00  C03 r00 = C03:`b`
+LoadI  r01  I08 r01 = I08:1
+Minus  r00  r01 r00:`b` -= r01:1
+LoadI  r01  I01 r01 = I01:0
+Mov    r02  r01 r02 = r01:0
+Minus  r01  r00 r01:0 -= r00:(`b` - 1)
+Minus  r02  r01 r02:0 -= r01:(0 - (`b` - 1))
+Load   r00  C02 r00 = C02:`a`
+Minus  r00  r02 r00:`a` -= r02:(0 - (0 - (`b` - 1)))
+Count  A03  r00 A03:COUNT <- r00:(`a` - (0 - (0 - (`b` - 1))))
+
+=> Exit code: 0
+
 ===== dbt3-1.10/queries/mysql/1_2.sql =====
 SELECT
   Out_0:`l_returnflag`

@@ -194,6 +194,16 @@ runtest "order by 2 columns" ./ParseCompileTest $'select col1 from tbl order by 
 runtest "group and order by" ./ParseCompileTest $'select col1, `col #2`, max(col3) from tbl group by col1, `col #2` order by col1, `col #2`;'
 runtest "order by ASC/DESC" ./ParseCompileTest $'select col1 from tbl order by col1, col2 ASC, col3 DESC, col4;'
 runtest "Unimplemented keyword used as quoted identifier" ./ParseCompileTest $'select `zone` from tbl;'
+runtest "Negation" ./ParseCompileTest $'
+select col1
+      ,min(-543)
+      ,sum(col2+-543)
+      ,max(col3--792) as subtraction
+      ,count(a---(b---1))
+from tbl
+where col1 < -45
+and col2 > -----col3
+and col3 > ----7;'
 
 # Complex queries
 

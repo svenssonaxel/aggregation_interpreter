@@ -555,6 +555,14 @@ RestSQLPreparer::print(struct ConditionalExpression* ce, LexString prefix)
     opstr = "+";
     break;
   case T_MINUS:
+    if (ce->args.left == NULL)
+    {
+      cout << "NEGATION" << endl <<
+        prefix << "\\- ";
+      LexString prefix_arg = prefix.concat(LexString{"   ", 3}, m_aalloc);
+      print(ce->args.right, prefix_arg);
+      return;
+    }
     opstr = "-";
     break;
   case T_MULTIPLY:

@@ -70,7 +70,7 @@ AggregationAPICompiler::new_expr(ExprOp op,
   }
   assert(m_status == Status::PROGRAMMING ||
          m_status == Status::COMPILING ||
-          m_status == Status::COMPILED);
+         m_status == Status::COMPILED);
   assert(left == NULL || m_exprs.has_item(left));
   assert(right == NULL || m_exprs.has_item(right));
   Expr e;
@@ -109,6 +109,38 @@ AggregationAPICompiler::new_expr(ExprOp op,
       e.est_regs = max(left->est_regs + 1, right->est_regs);
       e.eval_left_first = false;
     }
+  }
+  // Constant folding
+  if (left != NULL &&
+      left->op == ExprOp::LoadConstantInt &&
+      right != NULL &&
+      right->op == ExprOp::LoadConstantInt)
+  {
+    long int arg1 = m_constants[left->idx].long_int;
+    long int arg2 = m_constants[right->idx].long_int;
+    long int result = 0;
+    switch (op)
+    {
+    case ExprOp::Add:
+      result = arg1 + arg2;
+      break;
+    case ExprOp::Minus:
+      result = arg1 - arg2;
+      break;
+    case ExprOp::Mul:
+      result = arg1 * arg2;
+      break;
+    case ExprOp::Div:
+      result = arg1 / arg2;
+      break;
+    case ExprOp::Rem:
+      result = arg1 % arg2;
+      break;
+    default:
+      assert(false);
+    }
+    m_constants.push({result});
+    return new_expr(ExprOp::LoadConstantInt, 0, 0, m_constants.size() - 1);
   }
   // Deduplication
   for (uint i=0; i<m_exprs.size(); i++)
@@ -351,7 +383,7 @@ AggregationAPICompiler::compile()
   for (uint i=0; i<m_exprs.size(); i++)
   {
     Expr* e = &m_exprs[i];
-    assert(0 < e->usage);
+    assert(0 < e->usage || e->op == ExprOp::LoadConstantInt);
     assert(e->program_usage == 0);
     assert(e->has_been_compiled == false);
   }

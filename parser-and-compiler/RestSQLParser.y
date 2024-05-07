@@ -242,6 +242,7 @@ aggfun:
 arith_expr:
   identifier                            { $$ = context->get_agg()->Load($1); }
 | T_INT                                 { $$ = context->get_agg()->ConstantInteger($1); }
+| T_MINUS arith_expr                    { $$ = context->get_agg()->Minus(context->get_agg()->ConstantInteger(0), $2); }
 | T_LEFT arith_expr T_RIGHT             { $$ = $2; }
 | arith_expr T_PLUS arith_expr          { $$ = context->get_agg()->Add($1, $3); }
 | arith_expr T_MINUS arith_expr         { $$ = context->get_agg()->Minus($1, $3); }
@@ -260,6 +261,8 @@ cond_expr:
   identifier                            { initptr($$); $$->op = T_IDENTIFIER; $$->identifier = $1; }
 | T_STRING                              { initptr($$); $$->op = T_STRING; $$->string = $1; }
 | T_INT                                 { initptr($$); $$->op = T_INT; $$->constant_integer = $1; }
+| T_MINUS cond_expr                     { if ( $2->op == T_INT) { initptr($$); $$->op = T_INT; $$->constant_integer = -$2->constant_integer; }
+                                          else { init_cond($$, NULL, T_MINUS, $2); } }
 | T_LEFT cond_expr T_RIGHT              { $$ = $2; }
 | cond_expr T_OR cond_expr              { init_cond($$, $1, T_OR, $3); }
 | cond_expr T_XOR cond_expr             { init_cond($$, $1, T_XOR, $3); }
