@@ -126,7 +126,12 @@ extern void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t yyscanner, const char* s);
     LexString str;
     struct lsl* next;
   } lsl;
-  struct Outputs* outputs;
+  struct
+  {
+    Outputs* head;
+    Outputs* tail;
+  } outputs_linked_list;
+  Outputs* output;
   struct GroupbyColumns* groupby_cols;
   struct OrderbyColumns* orderby_cols;
   struct ConditionalExpression* conditional_expression;
@@ -187,7 +192,8 @@ extern void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t yyscanner, const char* s);
 %type<str> identifier
 %type<groupby_cols> groupby_opt groupby_cols groupby_col
 %type<orderby_cols> orderby_opt orderby orderby_cols orderby_col
-%type<outputs> outputlist output nonaliased_output
+%type<output> output nonaliased_output
+%type<outputs_linked_list> outputlist
 %type<ival> aggfun interval_type
 %type<arith_expr> arith_expr
 %type<conditional_expression> where_opt cond_expr
@@ -199,16 +205,21 @@ extern void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t yyscanner, const char* s);
 selectstatement:
   T_SELECT outputlist T_FROM identifier where_opt groupby_opt orderby_opt T_SEMICOLON
   {
-    context->ast_root.outputs = $2;
+    context->ast_root.outputs = $2.head;
     context->ast_root.table = $4;
     context->ast_root.where_expression = $5;
     context->ast_root.groupby_columns = $6;
     context->ast_root.orderby_columns = $7;
   }
 
+/* The outputlist rule is left-recursive in order to save both memory and cpu
+ * cycles. Naively, this would produce a linked list in reverse order, so we use
+ * a struct{head,tail} in order to produce a linked list that can be consumed in
+ * the same order that it is constructed; left-to-right.
+ */
 outputlist:
-  output                                { $$ = $1; }
-| output T_COMMA outputlist             { $$ = $1; $$->next = $3; }
+  output                                { $$.head = $1; $$.tail = $1; }
+| outputlist T_COMMA output             { $$.head = $1.head; $$.tail = $3; $1.tail->next = $3; }
 
 output:
   nonaliased_output                     { $$ = $1; }
