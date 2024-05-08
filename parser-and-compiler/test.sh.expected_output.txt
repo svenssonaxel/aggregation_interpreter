@@ -369,6 +369,102 @@ Parser stack exceeded its maximum depth.
 Failed to parse.
 => Exit code: 1
 
+===== Too long unquoted identifier in column name =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from tbl;
+!        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted identifier in column name =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` from tbl;
+!        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted identifier in column name, although characters < 64 =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaöööööööööö` from tbl;
+!        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long unquoted alias =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a as aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from tbl;
+!             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted alias =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a as `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` from tbl;
+!             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long unquoted identifier in WHERE =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl where aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+!                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted identifier in WHERE =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl where `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+!                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long unquoted identifier in GROUP BY =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl group by aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+!                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted identifier in GROUP BY =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl group by `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+!                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long unquoted identifier in ORDER BY =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl ORDER BY aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+!                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long quoted identifier in ORDER BY =====
+Syntax error in SQL statement: This identifier is too long. The limit is 64 bytes encoded as UTF-8.
+> 
+> select a from tbl ORDER BY `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+!                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
+===== Too long unaliased select expression =====
+Syntax error in SQL statement: Unaliased select expression too long. Use `AS` to add an alias no more than 64 bytes long.
+> 
+> select max ((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))) from tbl;
+!        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Failed to parse.
+=> Exit code: 1
+
 ===== APICompileTest =====
 Compilation example 1:
 
@@ -1148,6 +1244,32 @@ Minus  r02  r01 r02:0 -= r01:(0 - (`b` - 1))
 Load   r00  C02 r00 = C02:`a`
 Minus  r00  r02 r00:`a` -= r02:(0 - (0 - (`b` - 1)))
 Count  A03  r00 A03:COUNT <- r00:(`a` - (0 - (0 - (`b` - 1))))
+
+=> Exit code: 0
+
+===== Almost too long unaliased select expression =====
+SELECT
+  Out_0:`max((((((((((((((((((((((((((((((a))))))))))))))))))))))))))))))`
+   = A0:Max(`a`)
+FROM tbl
+
+Aggregation program (2 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`a`
+Max    A00  r00 A00:MAX <- r00:`a`
+
+=> Exit code: 0
+
+===== Aliased expression that would be too long without alias =====
+SELECT
+  Out_0:`max(a)`
+   = A0:Max(`a`)
+FROM tbl
+
+Aggregation program (2 instructions):
+Instr. DEST SRC DESCRIPTION
+Load   r00  C00 r00 = C00:`a`
+Max    A00  r00 A00:MAX <- r00:`a`
 
 => Exit code: 0
 

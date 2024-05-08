@@ -222,7 +222,19 @@ outputlist:
 | outputlist T_COMMA output             { $$.head = $1.head; $$.tail = $3; $1.tail->next = $3; }
 
 output:
-  nonaliased_output                     { $$ = $1; }
+  nonaliased_output
+  {
+    if ($1->output_name.len > 64)
+    {
+      context->set_err_state(
+        RestSQLPreparer::ErrState::TOO_LONG_UNALIASED_OUTPUT,
+        (@$).begin,
+        (@$).end - (@$).begin
+      );
+      YYERROR;
+    }
+    $$ = $1;
+  }
 | nonaliased_output T_AS identifier     { $$ = $1; $$->output_name = $3; }
 
 nonaliased_output:

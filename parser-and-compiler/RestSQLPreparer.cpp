@@ -132,6 +132,26 @@ RestSQLPreparer::parse()
   case ErrState::LEX_UNIMPLEMENTED_KEYWORD:
     msg = "Unimplemented keyword. If this was intended as an identifier, use backtick quotation.";
     break;
+  case ErrState::LEX_TOO_LONG_IDENTIFIER:
+    /*
+     * MySQL will happily truncate an identifier that is too long, but does not
+     * check that truncation happens at character boundaries. For identifiers
+     * containing multi-byte UTF-8 sequences, such truncation can result in an
+     * identifier with a name that is illegal UTF-8. We cannot allow such
+     * identifiers since the REST server may need to return legal UTF-8. We also
+     * cannot truncate in a "better" way than MySQL since we promise to either
+     * produce a result equivalent with that produced by MySQL, or fail.
+     * Therefore we have to fail, at least in some cases. We could check whether
+     * truncation would result in legal UTF-8, but it is simpler both from
+     * the implementer's and user's perspective to disallow all identifiers that
+     * are too long.
+     *
+     * Note that MySQL allows for 256-byte aliases, but we restrict them to 64
+     * bytes. It is simpler that way, as we allow only identifiers, not strings,
+     * as aliases.
+     */
+    msg = "This identifier is too long. The limit is 64 bytes encoded as UTF-8.";
+    break;
   case ErrState::LEX_INCOMPLETE_ESCAPE_SEQUENCE_IN_SINGLE_QUOTED_STRING:
     msg = "Incomplete escape sequence in single-quoted string";
     break;
@@ -146,6 +166,9 @@ RestSQLPreparer::parse()
     break;
   case ErrState::LEX_U_ENC_ERR:
     msg = "Invalid UTF-8 encoding.";
+    break;
+  case ErrState::TOO_LONG_UNALIASED_OUTPUT:
+    msg = "Unaliased select expression too long. Use `AS` to add an alias no more than 64 bytes long.";
     break;
   case ErrState::PARSER_ERROR:
     if (m_sql.len == 0)

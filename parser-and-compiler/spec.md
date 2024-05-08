@@ -58,7 +58,19 @@ Refer to the following table for what data types are supported in each context.
   Therefore, aliases cannot contain characters with code points higher than U+FFFF.
   Character set introducer and `COLLATE` clause are not supported.
 - Column names, table names and aliases can be unquoted or use backtick quotes.
-  However, unquoted identifiers may not coincide with a MySQL keyword, even if such unquoted identifier is allowed by MySQL, and even if the keyword is not implemented by RonDB REST SQL.
+  However, unquoted identifiers may not coincide with a MySQL keyword, even if
+  such unquoted identifier is allowed by MySQL, and even if the keyword is not
+  implemented by RonDB REST SQL.
+- Aliases after `AS` are limited to 64 bytes rather than 256. Similar to MySQL,
+  the length limits for other identifiers are 64 bytes. However, providing a
+  longer identifier produces an error rather than truncation. Even without an
+  alias, the limit on the output column name is 64 bytes and will not be
+  truncated. For very complex expressions, this means that a shorter alias
+  provided with `AS` is required. Note that the MySQL documentation incorrectly
+  claims that the identifier length limits are a certain number of *characters*,
+  while the actual limit is in *bytes*. When using UTF-8, the number of
+  characters is less than the number of bytes whenever an identifier contains a
+  character with a code point greater than `U+007f`.
 - Double quotes are not supported, neither for identifiers nor strings.
   This makes the `ANSI_QUOTES` SQL mode irrelevant.
 

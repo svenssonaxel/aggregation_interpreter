@@ -354,6 +354,13 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
   // cword is not a keyword, therefore it is an unquoted identifier.
   // todo: Decide whether to disallow unquoted identifiers altogether.
   yylval->str = LexString{yytext, size_t(yyleng)};
+  if (yyleng > 64)
+  {
+    // return_err(TOO_LONG_IDENTIFIER);
+    // However, this should not happen since the rule only matches up to 18
+    // bytes.
+    assert(false);
+  }
   return T_IDENTIFIER;
 }
 
@@ -371,6 +378,10 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
   */
   yylval->str = LexString{yytext, size_t(yyleng)};
   lloc_this_rule();
+  if (yyleng > 64)
+  {
+    return_err(TOO_LONG_IDENTIFIER);
+  }
   return T_IDENTIFIER;
 }
 
@@ -390,6 +401,10 @@ SINGLE_QUOTED_STRING_CHARACTER_EXCEPT_APOSTROPHE_AND_BACKSLASH         [^\0\047\
 <QUOTED_IDENTIFIER>` {
   yylloc->end = yytext + yyleng;
   BEGIN(INITIAL);
+  if (yylval->str.len > 64)
+  {
+    return_err(TOO_LONG_IDENTIFIER);
+  }
   return T_IDENTIFIER;
 }
 <QUOTED_IDENTIFIER><<EOF>> {
