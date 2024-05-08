@@ -53,8 +53,8 @@ private:
   byte* m_point = NULL;
   byte* m_stop = NULL;
 # ifdef ARENA_ALLOCATOR_DEBUG
-  uint m_allocated_by_us = sizeof(ArenaAllocator);
-  uint m_allocated_by_user = 0;
+  unsigned long int m_allocated_by_us = sizeof(ArenaAllocator);
+  unsigned long int m_allocated_by_user = 0;
 # endif
   byte m_initial_stack_allocated_page[INITIAL_PAGE_SIZE]; // MUST be last!
 public:
