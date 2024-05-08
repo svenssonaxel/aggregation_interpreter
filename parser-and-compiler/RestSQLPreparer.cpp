@@ -83,9 +83,19 @@ RestSQLPreparer::parse()
   // The rest is error handling.
   if (parse_result == 2)
   {
-    // Parser reports OOM, which shouldn't happen since our allocator throws an
-    // exception on OOM.
-    cerr << "Out of memory during parsing" << endl;
+    /*
+     * Bison parser reports OOM. Generally, this can happen in three situations:
+     * 1) Stack depth would exceed YYINITDEPTH but bison doesn't know how to
+     *    expand the stack. Since RSQLP_LTYPE_IS_TRIVIAL and
+     *    RSQLP_STYPE_IS_TRIVIAL are defined in RestSQLParser.y, this case does
+     *    not apply to us.
+     * 2) Stack depth would exceed YYMAXDEPTH.
+     * 3) The allocator used by the parser returns NULL, indicating OOM. Since
+     *    our ArenaAllocator does not return NULL but rather throws an exception
+     *    on OOM, this case does not apply to us.
+     * Therefore, we know that if we end up here, we are in case 2).
+     */
+    cerr << "Parser stack exceeded its maximum depth." << endl;
     m_status = Status::FAILED;
     return false;
   }

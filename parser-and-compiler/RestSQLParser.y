@@ -29,7 +29,7 @@
  */
 
 %defines "RestSQLParser.y.hpp"
-%output "RestSQLParser.y.cpp"
+%output "RestSQLParser.y.raw.cpp"
 %define api.pure full
 %parse-param {yyscan_t scanner}
 %lex-param {yyscan_t scanner}
@@ -48,6 +48,13 @@ typedef void * yyscan_t;
 // Let bison use RestSQLPreparer's arena allocator
 #define YYMALLOC(SIZE) context->get_allocator()->alloc(SIZE)
 #define YYFREE(PTR) void()
+
+// Let bison know it's okay to move the stack using memcpy. This could otherwise
+// lead to OOM errors.
+#define RSQLP_LTYPE_IS_TRIVIAL 1
+#define RSQLP_STYPE_IS_TRIVIAL 1
+
+// #define YYMAXDEPTH 10000 is the default.
 
 // Redefine default location propagation
 # define YYLLOC_DEFAULT(Cur, Rhs, N) \
@@ -378,3 +385,8 @@ void rsqlp_error(RSQLP_LTYPE* yylloc, yyscan_t scanner, const char *s)
   // Those two cases should be the only possibilities.
   assert(false);
 }
+
+// See comment near `#ifndef YYMAXDEPTH` in RestSQLParser.y.cpp
+static_assert(((unsigned long int)(YYSTACK_ALLOC_MAXIMUM)) >=
+              ((unsigned long int)(YYSTACK_BYTES(((unsigned long int)(YYMAXDEPTH))))),
+              "YYMAXDEPTH too large");

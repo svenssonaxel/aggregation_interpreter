@@ -26,13 +26,21 @@ all: \
  KeywordsUnitTest \
 
 
-RestSQLParser.y.cpp RestSQLParser.y.hpp: \
+RestSQLParser.y.raw.cpp RestSQLParser.y.hpp: \
  DynamicArray.hpp \
  Makefile \
  RestSQLParser.y \
  RestSQLPreparer.hpp \
 
 	bison -Wall -Wcounterexamples -Wdangling-alias -Werror RestSQLParser.y
+
+RestSQLParser.y.cpp: RestSQLParser.y.raw.cpp
+# We use `%define api.location.type` to declare a custom location type. However,
+# bison does not have any option for the default value of that type. So,
+# unfortunately we have to edit the generated file the hacky way.
+	[ "$$(grep -Ec '  = \{ 1, 1, 1, 1 \}' RestSQLParser.y.raw.cpp)" = 1 ]
+	sed -r "s/  = \{ 1, 1, 1, 1 \}/  = { NULL, 0 }/" $< > $@
+	if diff -q $< $@; then false; else true; fi
 
 RestSQLLexer.l.with-hold_char.cpp RestSQLLexer.l.hpp: \
  DynamicArray.hpp \

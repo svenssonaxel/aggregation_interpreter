@@ -364,6 +364,11 @@ Syntax error in SQL statement: Unexpected at this point
 Failed to parse.
 => Exit code: 1
 
+===== Parser stack exhausted =====
+Parser stack exceeded its maximum depth.
+Failed to parse.
+=> Exit code: 1
+
 ===== APICompileTest =====
 Compilation example 1:
 
